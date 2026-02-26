@@ -1,0 +1,150 @@
+{% comment %}
+  Dots for Love – Hero Section
+  Shopify section for the homepage hero area with animated dot canvas.
+{% endcomment %}
+
+<section class="hero" id="hero" aria-labelledby="hero-title">
+  <canvas class="hero-canvas" id="heroCanvas" aria-hidden="true"></canvas>
+  <div class="container hero-content">
+    <div class="hero-badge" role="text">
+      {{ section.settings.badge_text | default: '✦ Personalisierter Kunstdruck' }}
+    </div>
+
+    <h1 class="hero-title" id="hero-title">
+      {{ section.settings.title | default: 'Dein Moment' | newline_to_br }}
+      <br>in <em>{{ section.settings.title_italic | default: 'tausend Punkten' }}</em>
+    </h1>
+
+    <p class="hero-subtitle">
+      {{ section.settings.subtitle | default: 'Lade ein Foto hoch und wir verwandeln es in ein atemberaubendes Poster aus Punkten, Herzen oder Symbolen – als skalierbare Vektordatei, perfekt für jeden Druck.' }}
+    </p>
+
+    <div class="hero-cta">
+      <a href="{{ section.settings.cta_primary_url | default: pages['poster-gestalten'].url }}"
+         class="btn btn-primary btn-lg">
+        {{ section.settings.cta_primary_text | default: 'Jetzt gestalten' }}
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+      {%- if section.settings.cta_secondary_url != blank -%}
+        <a href="{{ section.settings.cta_secondary_url }}" class="btn btn-ghost btn-lg">
+          {{ section.settings.cta_secondary_text | default: 'Wie es funktioniert' }}
+        </a>
+      {%- endif -%}
+    </div>
+
+    <div class="hero-stats" role="list" aria-label="Highlights">
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'stat' -%}
+          <div class="stat" role="listitem" {{ block.shopify_attributes }}>
+            <strong>{{ block.settings.stat_value }}</strong>
+            <span>{{ block.settings.stat_label }}</span>
+          </div>
+          {%- unless forloop.last -%}
+            <div class="stat-divider" aria-hidden="true"></div>
+          {%- endunless -%}
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+  </div>
+
+  <div class="hero-scroll-hint" aria-hidden="true">
+    <span>Scroll</span>
+    <svg width="16" height="24" viewBox="0 0 16 24" fill="none">
+      <rect x="1" y="1" width="14" height="22" rx="7" stroke="currentColor" stroke-width="1.5"/>
+      <circle cx="8" cy="8" r="2" fill="currentColor">
+        <animate attributeName="cy" values="8;14;8" dur="1.6s" repeatCount="indefinite"/>
+      </circle>
+    </svg>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Hero",
+  "tag": "section",
+  "class": "hero-section",
+  "limit": 1,
+  "settings": [
+    {
+      "type": "text",
+      "id": "badge_text",
+      "label": "Badge-Text",
+      "default": "✦ Personalisierter Kunstdruck"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Titel (erste Zeile)",
+      "default": "Dein Moment"
+    },
+    {
+      "type": "text",
+      "id": "title_italic",
+      "label": "Titel (kursive Zeile)",
+      "default": "tausend Punkten"
+    },
+    {
+      "type": "textarea",
+      "id": "subtitle",
+      "label": "Untertitel",
+      "default": "Lade ein Foto hoch und wir verwandeln es in ein atemberaubendes Poster aus Punkten, Herzen oder Symbolen."
+    },
+    {
+      "type": "url",
+      "id": "cta_primary_url",
+      "label": "Haupt-Button URL"
+    },
+    {
+      "type": "text",
+      "id": "cta_primary_text",
+      "label": "Haupt-Button Text",
+      "default": "Jetzt gestalten"
+    },
+    {
+      "type": "url",
+      "id": "cta_secondary_url",
+      "label": "Zweiter Button URL"
+    },
+    {
+      "type": "text",
+      "id": "cta_secondary_text",
+      "label": "Zweiter Button Text",
+      "default": "Wie es funktioniert"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "stat",
+      "name": "Statistik",
+      "limit": 6,
+      "settings": [
+        {
+          "type": "text",
+          "id": "stat_value",
+          "label": "Wert",
+          "default": "∞"
+        },
+        {
+          "type": "text",
+          "id": "stat_label",
+          "label": "Beschriftung",
+          "default": "Skalierbar"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Hero",
+      "blocks": [
+        { "type": "stat", "settings": { "stat_value": "∞",   "stat_label": "Skalierbar" } },
+        { "type": "stat", "settings": { "stat_value": "SVG", "stat_label": "Vektordatei" } },
+        { "type": "stat", "settings": { "stat_value": "5+",  "stat_label": "Symbolformen" } },
+        { "type": "stat", "settings": { "stat_value": "DIN", "stat_label": "A1–A4" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

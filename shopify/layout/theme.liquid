@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="{{ request.locale.iso_code }}" class="no-js">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1A1A2E">
+
+  <title>
+    {%- if template == 'index' -%}
+      {{ shop.name }} – Personalisierte Dot-Art Poster
+    {%- elsif page_title -%}
+      {{ page_title }} – {{ shop.name }}
+    {%- else -%}
+      {{ shop.name }}
+    {%- endif -%}
+  </title>
+
+  {%- if page_description -%}
+    <meta name="description" content="{{ page_description | escape }}">
+  {%- else -%}
+    <meta name="description" content="{{ settings.meta_description | escape | default: 'Personalisierte Poster aus Punkten, Herzen und Symbolen. Erstelle dein individuelles Dot-Art Poster.' }}">
+  {%- endif -%}
+
+  <!-- Open Graph -->
+  <meta property="og:site_name" content="{{ shop.name }}">
+  <meta property="og:title" content="{{ page_title | default: shop.name }}">
+  <meta property="og:description" content="{{ page_description | default: settings.meta_description | escape }}">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="{{ canonical_url }}">
+  {%- if settings.share_image -%}
+    <meta property="og:image" content="{{ settings.share_image | image_url: width: 1200 }}">
+  {%- endif -%}
+
+  <link rel="canonical" href="{{ canonical_url }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+
+  {{ content_for_header }}
+
+  {{ 'theme.css' | asset_url | stylesheet_tag }}
+
+  <script>
+    // Make Shopify variant IDs available to app.js
+    window.DotsForLoveVariants = {
+      'A4':    '{{ settings.variant_id_a4 }}',
+      'A3':    '{{ settings.variant_id_a3 }}',
+      'A2':    '{{ settings.variant_id_a2 }}',
+      'A1':    '{{ settings.variant_id_a1 }}',
+      '30x40': '{{ settings.variant_id_30x40 }}',
+      '50x70': '{{ settings.variant_id_50x70 }}',
+      '70x100':'{{ settings.variant_id_70x100 }}',
+    };
+    window.ShopCurrency = '{{ cart.currency.iso_code }}';
+    window.ShopLocale   = '{{ request.locale.iso_code }}';
+  </script>
+</head>
+
+<body class="template-{{ template.name | handle }}">
+
+  {%- section 'announcement-bar' -%}
+
+  <!-- ── Header ── -->
+  <header class="site-header" id="site-header">
+    <div class="container header-inner">
+      <a href="{{ routes.root_url }}" class="logo" aria-label="{{ shop.name }}">
+        <span class="logo-dots" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </span>
+        <span class="logo-text">Dots <em>for Love</em></span>
+      </a>
+
+      <nav class="main-nav" aria-label="Hauptnavigation">
+        {%- for link in linklists[settings.main_menu].links -%}
+          {%- if link.links != blank -%}
+            <div class="nav-dropdown">
+              <a href="{{ link.url }}"
+                 {% if link.active %}aria-current="page"{% endif %}>
+                {{ link.title }}
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+              <div class="nav-dropdown-menu">
+                {%- for child in link.links -%}
+                  <a href="{{ child.url }}"
+                     {% if child.active %}aria-current="page"{% endif %}>
+                    {{ child.title }}
+                  </a>
+                {%- endfor -%}
+              </div>
+            </div>
+          {%- else -%}
+            <a href="{{ link.url }}"
+               {% if link.active %}aria-current="page"{% endif %}>
+              {{ link.title }}
+            </a>
+          {%- endif -%}
+        {%- endfor -%}
+
+        <a href="{{ pages['poster-gestalten'].url | default: '/pages/poster-gestalten' }}"
+           class="btn btn-primary btn-sm">
+          Poster erstellen
+        </a>
+
+        <!-- Cart -->
+        <a href="{{ routes.cart_url }}" class="cart-icon" aria-label="Warenkorb ({{ cart.item_count }})">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M2 2h2l2.5 10.5a2 2 0 002 1.5h8a2 2 0 001.96-1.6L20 7H6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="18" r="1.5" fill="currentColor"/><circle cx="16" cy="18" r="1.5" fill="currentColor"/></svg>
+          {%- if cart.item_count > 0 -%}
+            <span class="cart-count" aria-label="{{ cart.item_count }} Artikel">{{ cart.item_count }}</span>
+          {%- endif -%}
+        </a>
+      </nav>
+
+      <button class="nav-toggle" aria-label="Menü öffnen" aria-expanded="false" aria-controls="mobile-nav">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+
+    <!-- Mobile nav -->
+    <div class="mobile-nav" id="mobile-nav" aria-hidden="true">
+      {%- for link in linklists[settings.main_menu].links -%}
+        <a href="{{ link.url }}">{{ link.title }}</a>
+      {%- endfor -%}
+      <a href="{{ pages['poster-gestalten'].url | default: '/pages/poster-gestalten' }}"
+         class="btn btn-primary">
+        Poster erstellen
+      </a>
+    </div>
+  </header>
+
+  <main id="main-content" role="main">
+    {{ content_for_layout }}
+  </main>
+
+  <!-- ── Footer ── -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="{{ routes.root_url }}" class="logo logo--light" aria-label="{{ shop.name }}">
+            <span class="logo-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+            <span class="logo-text">Dots <em>for Love</em></span>
+          </a>
+          <p class="footer-tagline">{{ settings.footer_tagline | default: 'Erinnerungen in Punkte verwandeln.' }}</p>
+        </div>
+
+        {%- if settings.footer_menu_1 != blank -%}
+          <div class="footer-links">
+            <h4>{{ settings.footer_menu_1_title | default: 'Shop' }}</h4>
+            {%- for link in linklists[settings.footer_menu_1].links -%}
+              <a href="{{ link.url }}">{{ link.title }}</a>
+            {%- endfor -%}
+          </div>
+        {%- endif -%}
+
+        {%- if settings.footer_menu_2 != blank -%}
+          <div class="footer-links">
+            <h4>{{ settings.footer_menu_2_title | default: 'Rechtliches' }}</h4>
+            {%- for link in linklists[settings.footer_menu_2].links -%}
+              <a href="{{ link.url }}">{{ link.title }}</a>
+            {%- endfor -%}
+          </div>
+        {%- endif -%}
+
+        <div class="footer-links">
+          <h4>Hilfe</h4>
+          {%- for link in linklists[settings.footer_menu_3].links -%}
+            <a href="{{ link.url }}">{{ link.title }}</a>
+          {%- endfor -%}
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; {{ 'now' | date: '%Y' }} {{ shop.name }}. Alle Rechte vorbehalten.</p>
+        <p>Made with ♥ and many dots.</p>
+      </div>
+    </div>
+  </footer>
+
+  {{ 'configurator.js' | asset_url | script_tag }}
+  {{ 'theme.js' | asset_url | script_tag }}
+</body>
+</html>

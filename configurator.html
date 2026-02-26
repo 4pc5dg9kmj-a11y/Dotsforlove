@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Poster gestalten – Dots for Love</title>
+  <meta name="description" content="Gestalte dein personalisiertes Dot-Art Poster. Lade ein Foto hoch, wähle Form, Farbe und Größe." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body class="configurator-page">
+
+  <!-- ──────────────── HEADER ──────────────── -->
+  <header class="site-header site-header--dark" id="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="logo">
+        <span class="logo-dots" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </span>
+        <span class="logo-text">Dots <em>for Love</em></span>
+      </a>
+      <div class="header-steps" aria-label="Fortschritt">
+        <div class="hstep active" data-step="1"><span>1</span> Foto</div>
+        <div class="hstep-line"></div>
+        <div class="hstep" data-step="2"><span>2</span> Stil</div>
+        <div class="hstep-line"></div>
+        <div class="hstep" data-step="3"><span>3</span> Punkte</div>
+        <div class="hstep-line"></div>
+        <div class="hstep" data-step="4"><span>4</span> Format</div>
+      </div>
+      <a href="index.html" class="btn btn-ghost btn-sm">← Zurück</a>
+    </div>
+  </header>
+
+  <!-- ──────────────── MAIN CONFIGURATOR ──────────────── -->
+  <main class="configurator-main">
+    <div class="configurator-layout">
+
+      <!-- ── LEFT PANEL: Controls ── -->
+      <aside class="config-panel" id="configPanel">
+        <div class="config-scroll">
+
+          <!-- Step 1: Upload -->
+          <div class="config-section" id="step-upload" data-step="1">
+            <div class="config-section-header">
+              <div class="config-step-num">01</div>
+              <h2>Foto hochladen</h2>
+            </div>
+
+            <div class="upload-zone" id="uploadZone">
+              <input type="file" id="imageInput" accept="image/jpeg,image/png,image/webp,image/gif" class="visually-hidden" />
+              <div class="upload-zone-inner" id="uploadZoneInner">
+                <div class="upload-icon">
+                  <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><path d="M20 8v16M12 16l8-8 8 8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 30h24" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                </div>
+                <p class="upload-title">Bild hierher ziehen</p>
+                <p class="upload-sub">oder <label for="imageInput" class="upload-link">Datei auswählen</label></p>
+                <p class="upload-formats">JPG, PNG, WEBP · Max. 20 MB</p>
+              </div>
+              <div class="upload-preview" id="uploadPreview" hidden>
+                <img id="uploadedImage" src="" alt="Hochgeladenes Bild" />
+                <button class="upload-remove" id="uploadRemove" aria-label="Bild entfernen">×</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Shape & Color -->
+          <div class="config-section" id="step-style" data-step="2">
+            <div class="config-section-header">
+              <div class="config-step-num">02</div>
+              <h2>Stil wählen</h2>
+            </div>
+
+            <!-- Shape selector -->
+            <div class="config-group">
+              <label class="config-label">Symbol</label>
+              <div class="shape-selector" role="radiogroup" aria-label="Symbol auswählen">
+                <button class="shape-opt active" data-shape="circle" role="radio" aria-checked="true" title="Punkte">
+                  <svg width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="10" fill="currentColor"/></svg>
+                  <span>Punkt</span>
+                </button>
+                <button class="shape-opt" data-shape="heart" role="radio" aria-checked="false" title="Herzen">
+                  <svg width="28" height="28" viewBox="0 0 28 28"><path d="M14 22S4 16 4 9a6 6 0 0110-4.47A6 6 0 0124 9c0 7-10 13-10 13z" fill="currentColor"/></svg>
+                  <span>Herz</span>
+                </button>
+                <button class="shape-opt" data-shape="square" role="radio" aria-checked="false" title="Quadrate">
+                  <svg width="28" height="28" viewBox="0 0 28 28"><rect x="4" y="4" width="20" height="20" rx="2" fill="currentColor"/></svg>
+                  <span>Quadrat</span>
+                </button>
+                <button class="shape-opt" data-shape="cross" role="radio" aria-checked="false" title="Kreuze">
+                  <svg width="28" height="28" viewBox="0 0 28 28"><path d="M10 4h8v6h6v8h-6v6h-8v-6H4v-8h6V4z" fill="currentColor"/></svg>
+                  <span>Kreuz</span>
+                </button>
+                <button class="shape-opt" data-shape="triangle" role="radio" aria-checked="false" title="Dreiecke">
+                  <svg width="28" height="28" viewBox="0 0 28 28"><polygon points="14,3 27,25 1,25" fill="currentColor"/></svg>
+                  <span>Dreieck</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Color mode -->
+            <div class="config-group">
+              <label class="config-label">Farbmodus</label>
+              <div class="color-mode-toggle" role="radiogroup" aria-label="Farbmodus">
+                <button class="cmode-btn active" data-mode="single" role="radio" aria-checked="true">
+                  <span class="cmode-swatch single-swatch"></span>
+                  1 Farbe
+                </button>
+                <button class="cmode-btn" data-mode="triple" role="radio" aria-checked="false">
+                  <span class="cmode-swatch triple-swatch">
+                    <span></span><span></span><span></span>
+                  </span>
+                  3 Farben
+                </button>
+              </div>
+            </div>
+
+            <!-- Color pickers -->
+            <div class="config-group color-pickers" id="colorPickers">
+              <div class="color-picker-row" id="colorRow1">
+                <label class="config-label color-picker-label">
+                  <span id="color1Label">Farbe</span>
+                  <div class="color-picker-wrap">
+                    <input type="color" id="color1" value="#1A1A2E" class="color-input" />
+                    <span class="color-swatch" id="colorSwatch1" style="background:#1A1A2E"></span>
+                  </div>
+                </label>
+              </div>
+              <div class="color-picker-row hidden" id="colorRow2">
+                <label class="config-label color-picker-label">
+                  <span>Farbe 2 <em>(Mitteltöne)</em></span>
+                  <div class="color-picker-wrap">
+                    <input type="color" id="color2" value="#845EC2" class="color-input" />
+                    <span class="color-swatch" id="colorSwatch2" style="background:#845EC2"></span>
+                  </div>
+                </label>
+              </div>
+              <div class="color-picker-row hidden" id="colorRow3">
+                <label class="config-label color-picker-label">
+                  <span>Farbe 3 <em>(Lichter)</em></span>
+                  <div class="color-picker-wrap">
+                    <input type="color" id="color3" value="#FF9671" class="color-input" />
+                    <span class="color-swatch" id="colorSwatch3" style="background:#FF9671"></span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Background color -->
+            <div class="config-group">
+              <label class="config-label color-picker-label">
+                <span>Hintergrundfarbe</span>
+                <div class="color-picker-wrap">
+                  <input type="color" id="bgColor" value="#FFFFFF" class="color-input" />
+                  <span class="color-swatch" id="bgColorSwatch" style="background:#FFFFFF; border: 1px solid #ddd;"></span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Step 3: Dots Count -->
+          <div class="config-section" id="step-dots" data-step="3">
+            <div class="config-section-header">
+              <div class="config-step-num">03</div>
+              <h2>Punkte definieren</h2>
+            </div>
+
+            <!-- Count mode toggle -->
+            <div class="config-group">
+              <div class="dots-mode-toggle" role="tablist" aria-label="Punkteanzahl Modus">
+                <button class="dots-mode-btn active" data-mode="manual" role="tab" aria-selected="true">Anzahl eingeben</button>
+                <button class="dots-mode-btn" data-mode="years" role="tab" aria-selected="false">Jahre → Tage</button>
+                <button class="dots-mode-btn" data-mode="daterange" role="tab" aria-selected="false">Datum-Zeitraum</button>
+              </div>
+            </div>
+
+            <!-- Manual mode -->
+            <div class="dots-mode-panel active" id="mode-manual">
+              <div class="config-group">
+                <label class="config-label" for="dotsCount">Anzahl der Punkte</label>
+                <div class="range-input-group">
+                  <input type="range" id="dotsCountRange" min="100" max="20000" value="2000" step="100" class="range-slider" />
+                  <input type="number" id="dotsCount" value="2000" min="100" max="20000" step="100" class="number-input" />
+                </div>
+                <div class="preset-chips">
+                  <button class="chip" data-value="365">365 (1 Jahr)</button>
+                  <button class="chip" data-value="1000">1000</button>
+                  <button class="chip" data-value="1826">1826 (5 J.)</button>
+                  <button class="chip" data-value="3650">3650 (10 J.)</button>
+                  <button class="chip" data-value="5000">5000</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Years mode -->
+            <div class="dots-mode-panel" id="mode-years">
+              <div class="config-group">
+                <label class="config-label" for="yearsInputConf">Anzahl der Jahre</label>
+                <div class="years-input-row">
+                  <input type="number" id="yearsInputConf" value="5" min="1" max="100" class="number-input" />
+                  <span class="years-equals-conf">=</span>
+                  <div class="years-result-box">
+                    <output id="yearsResultConf" class="years-result-num">1826</output>
+                    <span class="years-result-label">Tage</span>
+                  </div>
+                </div>
+                <p class="config-hint">Schaltjahre werden berücksichtigt.</p>
+              </div>
+            </div>
+
+            <!-- Date range mode -->
+            <div class="dots-mode-panel" id="mode-daterange">
+              <div class="config-group">
+                <label class="config-label" for="dateStart">Startdatum</label>
+                <input type="date" id="dateStart" class="date-input" />
+              </div>
+              <div class="config-group">
+                <label class="config-label" for="dateEnd">Enddatum</label>
+                <input type="date" id="dateEnd" class="date-input" />
+              </div>
+              <div class="date-result-box" id="dateResultBox">
+                <output id="dateResult">—</output> <span>Tage</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 4: Size & Orientation -->
+          <div class="config-section" id="step-size" data-step="4">
+            <div class="config-section-header">
+              <div class="config-step-num">04</div>
+              <h2>Format & Größe</h2>
+            </div>
+
+            <div class="config-group">
+              <label class="config-label">Posterformat</label>
+              <div class="size-selector" role="radiogroup" aria-label="Posterformat wählen">
+                <button class="size-opt" data-size="A4" role="radio" aria-checked="false">
+                  <span class="size-icon size-icon--a4"></span>
+                  <span class="size-name">A4</span>
+                  <span class="size-dim">21 × 29,7 cm</span>
+                </button>
+                <button class="size-opt active" data-size="A3" role="radio" aria-checked="true">
+                  <span class="size-icon size-icon--a3"></span>
+                  <span class="size-name">A3</span>
+                  <span class="size-dim">29,7 × 42 cm</span>
+                </button>
+                <button class="size-opt" data-size="A2" role="radio" aria-checked="false">
+                  <span class="size-icon size-icon--a2"></span>
+                  <span class="size-name">A2</span>
+                  <span class="size-dim">42 × 59,4 cm</span>
+                </button>
+                <button class="size-opt" data-size="30x40" role="radio" aria-checked="false">
+                  <span class="size-icon size-icon--custom"></span>
+                  <span class="size-name">30×40</span>
+                  <span class="size-dim">30 × 40 cm</span>
+                </button>
+                <button class="size-opt" data-size="50x70" role="radio" aria-checked="false">
+                  <span class="size-icon size-icon--custom"></span>
+                  <span class="size-name">50×70</span>
+                  <span class="size-dim">50 × 70 cm</span>
+                </button>
+                <button class="size-opt" data-size="70x100" role="radio" aria-checked="false">
+                  <span class="size-icon size-icon--custom"></span>
+                  <span class="size-name">70×100</span>
+                  <span class="size-dim">70 × 100 cm</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="config-group">
+              <label class="config-label">Ausrichtung</label>
+              <div class="orientation-toggle" role="radiogroup" aria-label="Ausrichtung">
+                <button class="orient-btn active" data-orient="portrait" role="radio" aria-checked="true">
+                  <svg width="16" height="22" viewBox="0 0 16 22" fill="none"><rect x="1" y="1" width="14" height="20" rx="2" stroke="currentColor" stroke-width="1.5"/></svg>
+                  Hochformat
+                </button>
+                <button class="orient-btn" data-orient="landscape" role="radio" aria-checked="false">
+                  <svg width="22" height="16" viewBox="0 0 22 16" fill="none"><rect x="1" y="1" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/></svg>
+                  Querformat
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Generate Button -->
+          <div class="config-section config-generate">
+            <button class="btn btn-primary btn-generate" id="generateBtn">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 2v16M2 10h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.5" opacity=".4"/></svg>
+              Vorschau generieren
+            </button>
+            <p class="config-hint">Die Vorschau enthält einen Wasserzeichen-Schutz. Die vollständige Vektordatei erhältst du nach dem Kauf.</p>
+          </div>
+
+        </div><!-- /config-scroll -->
+      </aside>
+
+      <!-- ── RIGHT PANEL: Preview ── -->
+      <div class="preview-panel" id="previewPanel">
+        <div class="preview-topbar">
+          <div class="preview-info">
+            <span id="previewInfo">A3 · Hochformat · 2000 Punkte · Punkte</span>
+          </div>
+          <div class="preview-zoom">
+            <button class="zoom-btn" id="zoomOut" aria-label="Herauszoomen">−</button>
+            <span id="zoomLevel">100%</span>
+            <button class="zoom-btn" id="zoomIn" aria-label="Hineinzoomen">+</button>
+          </div>
+        </div>
+
+        <div class="preview-stage" id="previewStage">
+          <!-- Empty state -->
+          <div class="preview-empty" id="previewEmpty">
+            <div class="preview-empty-icon">
+              <svg width="64" height="64" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="2" opacity=".3"/><circle cx="22" cy="28" r="4" fill="currentColor" opacity=".4"/><circle cx="32" cy="22" r="4" fill="currentColor" opacity=".4"/><circle cx="42" cy="28" r="4" fill="currentColor" opacity=".4"/><circle cx="27" cy="38" r="4" fill="currentColor" opacity=".4"/><circle cx="37" cy="38" r="4" fill="currentColor" opacity=".4"/></svg>
+            </div>
+            <h3>Lade ein Foto hoch und klicke auf „Vorschau generieren"</h3>
+            <p>Die Vorschau erscheint hier mit Wasserzeichen-Schutz.</p>
+          </div>
+
+          <!-- Canvas preview (protected) -->
+          <div class="preview-wrapper" id="previewWrapper" hidden>
+            <div class="preview-protect-overlay" aria-hidden="true" id="protectOverlay"></div>
+            <canvas id="previewCanvas" width="800" height="1131"></canvas>
+          </div>
+
+          <!-- Loading state -->
+          <div class="preview-loading" id="previewLoading" hidden>
+            <div class="loading-spinner"></div>
+            <p>Generiere dein Poster…</p>
+            <p class="loading-sub" id="loadingProgress">Analysiere Bild…</p>
+          </div>
+        </div>
+
+        <!-- Purchase bar -->
+        <div class="purchase-bar" id="purchaseBar" hidden>
+          <div class="purchase-info">
+            <div class="purchase-details">
+              <span class="purchase-size" id="purchaseSizeLabel">A3 Poster</span>
+              <span class="purchase-dots" id="purchaseDotsLabel">2000 Punkte</span>
+            </div>
+            <div class="purchase-price">
+              <span class="price-label">Preis</span>
+              <span class="price-value" id="purchasePrice">29,90 €</span>
+            </div>
+          </div>
+          <div class="purchase-actions">
+            <button class="btn btn-outline btn-sm" id="previewDownloadBtn">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M4 7l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              SVG Vorschau
+            </button>
+            <button class="btn btn-primary" id="addToCartBtn">
+              In den Warenkorb →
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /preview-panel -->
+
+    </div><!-- /configurator-layout -->
+  </main>
+
+  <!-- ──────────────── SHOPIFY CART MODAL ──────────────── -->
+  <div class="modal-overlay" id="cartModal" hidden aria-modal="true" role="dialog" aria-labelledby="cartModalTitle">
+    <div class="modal-card">
+      <button class="modal-close" id="cartModalClose" aria-label="Schließen">×</button>
+      <div class="modal-icon">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="20" fill="#F0FFF4"/><path d="M14 24l6 6 14-14" stroke="#00C9A7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h2 id="cartModalTitle">In den Warenkorb gelegt!</h2>
+      <p>Dein personalisiertes Dot-Art Poster wurde zum Warenkorb hinzugefügt. Nach dem Kauf erhältst du sofort deine SVG-Vektordatei per E-Mail.</p>
+      <div class="modal-actions">
+        <button class="btn btn-outline" id="continueShopping">Weiter gestalten</button>
+        <a href="#" class="btn btn-primary" id="goToCheckout">Zur Kasse →</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="assets/configurator.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

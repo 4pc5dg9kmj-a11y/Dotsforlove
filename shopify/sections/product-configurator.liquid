@@ -1,0 +1,527 @@
+{% comment %}
+  Dots for Love – Product Configurator Section
+  =============================================
+  Embeds the full dot-pattern configurator directly in a Shopify page.
+  Assign this section to the "poster-gestalten" page template.
+
+  Required: configurator.js and theme.css must be in /assets/.
+
+  Cart Integration:
+  - Adds to cart via /cart/add.js AJAX API
+  - Line item properties store all customisation settings
+  - A fulfillment app (e.g. a private Shopify App) handles SVG generation
+    and delivery to the customer
+
+  Setup:
+  1. Create a product for each poster size in Shopify
+  2. Set variant IDs in Theme Settings → Variant IDs
+  3. Install the section on a page template
+{% endcomment %}
+
+<div class="configurator-page" id="configuratorRoot">
+
+  <!-- Header progress bar -->
+  <div class="config-progress-bar">
+    <div class="config-progress-inner">
+      <div class="cpb-step active" data-step="1">
+        <span class="cpb-num">1</span>
+        <span class="cpb-label">Foto hochladen</span>
+      </div>
+      <div class="cpb-line"></div>
+      <div class="cpb-step" data-step="2">
+        <span class="cpb-num">2</span>
+        <span class="cpb-label">Stil wählen</span>
+      </div>
+      <div class="cpb-line"></div>
+      <div class="cpb-step" data-step="3">
+        <span class="cpb-num">3</span>
+        <span class="cpb-label">Punkte</span>
+      </div>
+      <div class="cpb-line"></div>
+      <div class="cpb-step" data-step="4">
+        <span class="cpb-num">4</span>
+        <span class="cpb-label">Format</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="configurator-layout">
+
+    <!-- ═══ LEFT: Config Panel ═══ -->
+    <aside class="config-panel" aria-label="Poster-Konfiguration">
+      <div class="config-scroll">
+
+        <!-- ── Step 1: Upload ── -->
+        <div class="config-section" data-step="1">
+          <div class="config-section-header">
+            <div class="config-step-num">01</div>
+            <h2>Foto hochladen</h2>
+          </div>
+
+          <div class="upload-zone" id="uploadZone" role="region" aria-label="Bild hochladen">
+            <input type="file" id="imageInput"
+                   accept="image/jpeg,image/png,image/webp"
+                   class="visually-hidden"
+                   aria-label="Bild auswählen">
+            <div class="upload-zone-inner" id="uploadZoneInner">
+              <div class="upload-icon" aria-hidden="true">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                  <path d="M20 8v16M12 16l8-8 8 8" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M8 30h24" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <p class="upload-title">Bild hierher ziehen</p>
+              <p class="upload-sub">
+                oder <label for="imageInput" class="upload-link">Datei auswählen</label>
+              </p>
+              <p class="upload-formats">JPG, PNG, WEBP · Max. 20 MB</p>
+            </div>
+            <div class="upload-preview" id="uploadPreview" hidden aria-live="polite">
+              <img id="uploadedImage" src="" alt="Hochgeladenes Bild">
+              <button class="upload-remove" id="uploadRemove"
+                      aria-label="Bild entfernen und neu hochladen">×</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Step 2: Style ── -->
+        <div class="config-section" data-step="2">
+          <div class="config-section-header">
+            <div class="config-step-num">02</div>
+            <h2>Stil wählen</h2>
+          </div>
+
+          <div class="config-group">
+            <label class="config-label">Symbol</label>
+            <div class="shape-selector" role="radiogroup" aria-label="Symbol auswählen">
+              {%- assign shapes = 'circle,heart,square,cross,triangle' | split: ',' -%}
+              {%- assign shape_labels = 'Punkt,Herz,Quadrat,Kreuz,Dreieck' | split: ',' -%}
+              {%- for shape in shapes -%}
+                <button class="shape-opt{% if forloop.first %} active{% endif %}"
+                        data-shape="{{ shape }}"
+                        role="radio"
+                        aria-checked="{{ forloop.first | json }}"
+                        title="{{ shape_labels[forloop.index0] }}">
+                  {%- case shape -%}
+                    {%- when 'circle' -%}
+                      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="10" fill="currentColor"/></svg>
+                    {%- when 'heart' -%}
+                      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><path d="M14 22S4 16 4 9a6 6 0 0110-4.47A6 6 0 0124 9c0 7-10 13-10 13z" fill="currentColor"/></svg>
+                    {%- when 'square' -%}
+                      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect x="4" y="4" width="20" height="20" rx="2" fill="currentColor"/></svg>
+                    {%- when 'cross' -%}
+                      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><path d="M10 4h8v6h6v8h-6v6h-8v-6H4v-8h6V4z" fill="currentColor"/></svg>
+                    {%- when 'triangle' -%}
+                      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><polygon points="14,3 27,25 1,25" fill="currentColor"/></svg>
+                  {%- endcase -%}
+                  <span>{{ shape_labels[forloop.index0] }}</span>
+                </button>
+              {%- endfor -%}
+            </div>
+          </div>
+
+          <div class="config-group">
+            <label class="config-label">Farbmodus</label>
+            <div class="color-mode-toggle" role="radiogroup" aria-label="Farbmodus wählen">
+              <button class="cmode-btn active" data-mode="single" role="radio" aria-checked="true">
+                <span class="cmode-swatch single-swatch"></span>
+                1 Farbe
+              </button>
+              <button class="cmode-btn" data-mode="triple" role="radio" aria-checked="false">
+                <span class="cmode-swatch triple-swatch">
+                  <span></span><span></span><span></span>
+                </span>
+                3 Farben
+              </button>
+            </div>
+          </div>
+
+          <div class="config-group color-pickers" id="colorPickers">
+            <div class="color-picker-row" id="colorRow1">
+              <label class="config-label color-picker-label">
+                <span id="color1Label">Farbe</span>
+                <div class="color-picker-wrap">
+                  <input type="color" id="color1" value="{{ section.settings.default_color1 }}"
+                         class="color-input" aria-label="Farbe 1 wählen">
+                  <span class="color-swatch" id="colorSwatch1"
+                        style="background:{{ section.settings.default_color1 }}"></span>
+                </div>
+              </label>
+            </div>
+            <div class="color-picker-row hidden" id="colorRow2">
+              <label class="config-label color-picker-label">
+                <span>Farbe 2 <em>(Mitteltöne)</em></span>
+                <div class="color-picker-wrap">
+                  <input type="color" id="color2" value="{{ section.settings.default_color2 }}"
+                         class="color-input" aria-label="Farbe 2 wählen">
+                  <span class="color-swatch" id="colorSwatch2"
+                        style="background:{{ section.settings.default_color2 }}"></span>
+                </div>
+              </label>
+            </div>
+            <div class="color-picker-row hidden" id="colorRow3">
+              <label class="config-label color-picker-label">
+                <span>Farbe 3 <em>(Lichter)</em></span>
+                <div class="color-picker-wrap">
+                  <input type="color" id="color3" value="{{ section.settings.default_color3 }}"
+                         class="color-input" aria-label="Farbe 3 wählen">
+                  <span class="color-swatch" id="colorSwatch3"
+                        style="background:{{ section.settings.default_color3 }}"></span>
+                </div>
+              </label>
+            </div>
+            <div class="color-picker-row">
+              <label class="config-label color-picker-label">
+                <span>Hintergrundfarbe</span>
+                <div class="color-picker-wrap">
+                  <input type="color" id="bgColor" value="#FFFFFF"
+                         class="color-input" aria-label="Hintergrundfarbe wählen">
+                  <span class="color-swatch" id="bgColorSwatch"
+                        style="background:#FFFFFF; border:1px solid #ddd"></span>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Step 3: Dots ── -->
+        <div class="config-section" data-step="3">
+          <div class="config-section-header">
+            <div class="config-step-num">03</div>
+            <h2>Punkte definieren</h2>
+          </div>
+
+          <div class="dots-mode-toggle" role="tablist" aria-label="Punktezählmethode">
+            <button class="dots-mode-btn active" data-mode="manual" role="tab" aria-selected="true">
+              Anzahl
+            </button>
+            <button class="dots-mode-btn" data-mode="years" role="tab" aria-selected="false">
+              Jahre → Tage
+            </button>
+            <button class="dots-mode-btn" data-mode="daterange" role="tab" aria-selected="false">
+              Zeitraum
+            </button>
+          </div>
+
+          <!-- Manual -->
+          <div class="dots-mode-panel active" id="mode-manual" role="tabpanel">
+            <div class="config-group">
+              <label class="config-label" for="dotsCount">Anzahl der Punkte</label>
+              <div class="range-input-group">
+                <input type="range" id="dotsCountRange"
+                       min="{{ section.settings.dots_min }}"
+                       max="{{ section.settings.dots_max }}"
+                       value="{{ section.settings.dots_default }}"
+                       step="100" class="range-slider"
+                       aria-label="Punkteanzahl als Schieberegler">
+                <input type="number" id="dotsCount"
+                       value="{{ section.settings.dots_default }}"
+                       min="{{ section.settings.dots_min }}"
+                       max="{{ section.settings.dots_max }}"
+                       step="100" class="number-input"
+                       aria-label="Punkteanzahl eingeben">
+              </div>
+              <div class="preset-chips" role="list" aria-label="Schnellauswahl">
+                <button class="chip" data-value="365" role="listitem">365 (1 Jahr)</button>
+                <button class="chip" data-value="1000" role="listitem">1.000</button>
+                <button class="chip" data-value="1826" role="listitem">1826 (5 J.)</button>
+                <button class="chip" data-value="3652" role="listitem">3652 (10 J.)</button>
+                <button class="chip" data-value="5000" role="listitem">5.000</button>
+                <button class="chip" data-value="10000" role="listitem">10.000</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Years -->
+          <div class="dots-mode-panel" id="mode-years" role="tabpanel" hidden>
+            <div class="config-group">
+              <label class="config-label" for="yearsInputConf">Anzahl der Jahre</label>
+              <div class="years-input-row">
+                <input type="number" id="yearsInputConf" value="5" min="1" max="100"
+                       class="number-input" aria-label="Jahresanzahl">
+                <span class="years-equals-conf" aria-hidden="true">=</span>
+                <div class="years-result-box" aria-live="polite" aria-atomic="true">
+                  <output id="yearsResultConf" class="years-result-num">1826</output>
+                  <span class="years-result-label">Tage</span>
+                </div>
+              </div>
+              <p class="config-hint">Schaltjahre werden berücksichtigt.</p>
+            </div>
+          </div>
+
+          <!-- Date range -->
+          <div class="dots-mode-panel" id="mode-daterange" role="tabpanel" hidden>
+            <div class="config-group">
+              <label class="config-label" for="dateStart">Startdatum</label>
+              <input type="date" id="dateStart" class="date-input" aria-required="true">
+            </div>
+            <div class="config-group">
+              <label class="config-label" for="dateEnd">Enddatum</label>
+              <input type="date" id="dateEnd" class="date-input" aria-required="true">
+            </div>
+            <div class="date-result-box" id="dateResultBox" aria-live="polite">
+              <output id="dateResult">—</output> <span>Tage</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Step 4: Size ── -->
+        <div class="config-section" data-step="4">
+          <div class="config-section-header">
+            <div class="config-step-num">04</div>
+            <h2>Format & Größe</h2>
+          </div>
+
+          <div class="config-group">
+            <label class="config-label">Posterformat</label>
+            <div class="size-selector" role="radiogroup" aria-label="Posterformat wählen">
+              {%- assign sizes = 'A4,A3,A2,30x40,50x70,70x100' | split: ',' -%}
+              {%- assign size_dims = '21×29,7 cm,29,7×42 cm,42×59,4 cm,30×40 cm,50×70 cm,70×100 cm' | split: ',' -%}
+              {%- for size in sizes -%}
+                <button class="size-opt{% if size == section.settings.default_size %} active{% endif %}"
+                        data-size="{{ size }}"
+                        role="radio"
+                        aria-checked="{{ size == section.settings.default_size | json }}">
+                  <span class="size-icon size-icon--{{ size | downcase | replace: 'x', 'x' }}"></span>
+                  <span class="size-name">{{ size }}</span>
+                  <span class="size-dim">{{ size_dims[forloop.index0] }}</span>
+                </button>
+              {%- endfor -%}
+            </div>
+          </div>
+
+          <div class="config-group">
+            <label class="config-label">Ausrichtung</label>
+            <div class="orientation-toggle" role="radiogroup" aria-label="Ausrichtung wählen">
+              <button class="orient-btn active" data-orient="portrait"
+                      role="radio" aria-checked="true">
+                <svg width="16" height="22" viewBox="0 0 16 22" fill="none" aria-hidden="true">
+                  <rect x="1" y="1" width="14" height="20" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+                Hochformat
+              </button>
+              <button class="orient-btn" data-orient="landscape"
+                      role="radio" aria-checked="false">
+                <svg width="22" height="16" viewBox="0 0 22 16" fill="none" aria-hidden="true">
+                  <rect x="1" y="1" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+                Querformat
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Generate ── -->
+        <div class="config-section config-generate">
+          <button class="btn btn-primary btn-generate" id="generateBtn" type="button">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M10 2v16M2 10h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+            </svg>
+            Vorschau generieren
+          </button>
+          <p class="config-hint">
+            Die Vorschau enthält einen Wasserzeichen-Schutz.
+            Die druckfertige SVG-Vektordatei erhältst du nach dem Kauf.
+          </p>
+        </div>
+
+      </div><!-- /config-scroll -->
+    </aside>
+
+    <!-- ═══ RIGHT: Preview ═══ -->
+    <div class="preview-panel" id="previewPanel" aria-label="Vorschau">
+      <div class="preview-topbar">
+        <div class="preview-info" id="previewInfo" aria-live="polite">
+          Wähle Einstellungen und klicke auf „Vorschau generieren"
+        </div>
+        <div class="preview-zoom" aria-label="Zoom-Steuerung">
+          <button class="zoom-btn" id="zoomOut" aria-label="Herauszoomen" type="button">−</button>
+          <span id="zoomLevel" aria-live="polite">100%</span>
+          <button class="zoom-btn" id="zoomIn" aria-label="Hineinzoomen" type="button">+</button>
+        </div>
+      </div>
+
+      <div class="preview-stage" id="previewStage">
+        <!-- Empty state -->
+        <div class="preview-empty" id="previewEmpty" aria-live="polite">
+          <div class="preview-empty-icon" aria-hidden="true">
+            <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+              <circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="2" opacity=".3"/>
+              <circle cx="22" cy="28" r="4" fill="currentColor" opacity=".4"/>
+              <circle cx="32" cy="22" r="4" fill="currentColor" opacity=".4"/>
+              <circle cx="42" cy="28" r="4" fill="currentColor" opacity=".4"/>
+              <circle cx="27" cy="38" r="4" fill="currentColor" opacity=".4"/>
+              <circle cx="37" cy="38" r="4" fill="currentColor" opacity=".4"/>
+            </svg>
+          </div>
+          <h3>Lade ein Foto hoch und klicke auf „Vorschau generieren"</h3>
+          <p>Die Vorschau erscheint hier mit Wasserzeichen-Schutz.</p>
+        </div>
+
+        <!-- Canvas (protected) -->
+        <div class="preview-wrapper" id="previewWrapper" hidden aria-label="Poster-Vorschau (mit Wasserzeichen)">
+          <div class="preview-protect-overlay" aria-hidden="true" id="protectOverlay"></div>
+          <canvas id="previewCanvas"
+                  width="800" height="1131"
+                  aria-label="Vorschau des Dot-Art Posters (mit Wasserzeichen geschützt)">
+          </canvas>
+        </div>
+
+        <!-- Loading -->
+        <div class="preview-loading" id="previewLoading" hidden role="status" aria-live="polite">
+          <div class="loading-spinner" aria-hidden="true"></div>
+          <p>Generiere dein Poster…</p>
+          <p class="loading-sub" id="loadingProgress">Analysiere Bild…</p>
+        </div>
+      </div>
+
+      <!-- Purchase bar -->
+      <div class="purchase-bar" id="purchaseBar" hidden>
+        <div class="purchase-info">
+          <div class="purchase-details">
+            <span class="purchase-size" id="purchaseSizeLabel">
+              {{ section.settings.default_size }} Poster
+            </span>
+            <span class="purchase-dots" id="purchaseDotsLabel">
+              {{ section.settings.dots_default }} Punkte
+            </span>
+          </div>
+          <div class="purchase-price">
+            <span class="price-label">Preis</span>
+            <span class="price-value" id="purchasePrice">
+              {% comment %} Price set dynamically by JS {% endcomment %}
+              29,90 €
+            </span>
+          </div>
+        </div>
+        <div class="purchase-actions">
+          <button class="btn btn-outline btn-sm" id="previewDownloadBtn" type="button"
+                  aria-label="Wasserzeichen-Vorschau als SVG herunterladen">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M8 2v8M4 7l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            SVG Vorschau
+          </button>
+          <button class="btn btn-primary" id="addToCartBtn" type="button"
+                  aria-label="Poster in den Warenkorb legen">
+            In den Warenkorb →
+          </button>
+        </div>
+      </div>
+    </div>
+  </div><!-- /configurator-layout -->
+
+  <!-- Success Modal -->
+  <div class="modal-overlay" id="cartModal" hidden
+       aria-modal="true" role="dialog" aria-labelledby="cartModalTitle">
+    <div class="modal-card">
+      <button class="modal-close" id="cartModalClose" aria-label="Dialog schließen" type="button">×</button>
+      <div class="modal-icon" aria-hidden="true">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="20" fill="#E6FBF7"/>
+          <path d="M14 24l6 6 14-14" stroke="#00C9A7" stroke-width="3"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h2 id="cartModalTitle">In den Warenkorb gelegt!</h2>
+      <p>
+        Dein personalisiertes Dot-Art Poster wurde zum Warenkorb hinzugefügt.
+        Nach dem Kauf erhältst du sofort deine druckfertige SVG-Vektordatei per E-Mail.
+      </p>
+      <div class="modal-actions">
+        <button class="btn btn-outline" id="continueShopping" type="button">
+          Weiter gestalten
+        </button>
+        <a href="{{ routes.cart_url }}" class="btn btn-primary" id="goToCheckout">
+          Zur Kasse →
+        </a>
+      </div>
+    </div>
+  </div>
+</div><!-- /configuratorRoot -->
+
+{% schema %}
+{
+  "name": "Poster-Konfigurator",
+  "tag": "section",
+  "class": "configurator-section",
+  "limit": 1,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Standard-Einstellungen"
+    },
+    {
+      "type": "select",
+      "id": "default_size",
+      "label": "Standard-Posterformat",
+      "options": [
+        { "value": "A4",    "label": "DIN A4 (21×29,7 cm)" },
+        { "value": "A3",    "label": "DIN A3 (29,7×42 cm)" },
+        { "value": "A2",    "label": "DIN A2 (42×59,4 cm)" },
+        { "value": "30x40", "label": "30×40 cm" },
+        { "value": "50x70", "label": "50×70 cm" },
+        { "value": "70x100","label": "70×100 cm" }
+      ],
+      "default": "A3"
+    },
+    {
+      "type": "range",
+      "id": "dots_default",
+      "label": "Standard-Punkteanzahl",
+      "min": 500,
+      "max": 10000,
+      "step": 100,
+      "default": 2000
+    },
+    {
+      "type": "range",
+      "id": "dots_min",
+      "label": "Minimale Punkteanzahl",
+      "min": 100,
+      "max": 1000,
+      "step": 50,
+      "default": 100
+    },
+    {
+      "type": "range",
+      "id": "dots_max",
+      "label": "Maximale Punkteanzahl",
+      "min": 5000,
+      "max": 20000,
+      "step": 1000,
+      "default": 15000
+    },
+    {
+      "type": "header",
+      "content": "Standard-Farben"
+    },
+    {
+      "type": "color",
+      "id": "default_color1",
+      "label": "Standard Farbe 1",
+      "default": "#1A1A2E"
+    },
+    {
+      "type": "color",
+      "id": "default_color2",
+      "label": "Standard Farbe 2",
+      "default": "#845EC2"
+    },
+    {
+      "type": "color",
+      "id": "default_color3",
+      "label": "Standard Farbe 3",
+      "default": "#00C9A7"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Poster-Konfigurator"
+    }
+  ]
+}
+{% endschema %}

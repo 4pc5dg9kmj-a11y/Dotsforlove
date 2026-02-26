@@ -1,0 +1,204 @@
+[
+  {
+    "name": "theme_info",
+    "theme_name": "Dots for Love",
+    "theme_version": "1.0.0",
+    "theme_author": "Dots for Love",
+    "theme_documentation_url": "https://dotsforlove.com/docs",
+    "theme_support_url": "https://dotsforlove.com/support"
+  },
+  {
+    "name": "Allgemein",
+    "settings": [
+      {
+        "type": "text",
+        "id": "meta_description",
+        "label": "Standard Meta-Beschreibung",
+        "default": "Personalisierte Poster aus Punkten, Herzen und Symbolen. Erstelle dein individuelles Dot-Art Poster als druckfertige SVG-Vektordatei."
+      },
+      {
+        "type": "image_picker",
+        "id": "share_image",
+        "label": "Social Share Bild"
+      },
+      {
+        "type": "text",
+        "id": "footer_tagline",
+        "label": "Footer Tagline",
+        "default": "Erinnerungen in Punkte verwandeln."
+      }
+    ]
+  },
+  {
+    "name": "Navigation",
+    "settings": [
+      {
+        "type": "link_list",
+        "id": "main_menu",
+        "label": "Hauptmenü",
+        "default": "main-menu"
+      },
+      {
+        "type": "link_list",
+        "id": "footer_menu_1",
+        "label": "Footer-Menü 1 (Shop)",
+        "default": "footer-shop"
+      },
+      {
+        "type": "text",
+        "id": "footer_menu_1_title",
+        "label": "Titel Footer-Menü 1",
+        "default": "Shop"
+      },
+      {
+        "type": "link_list",
+        "id": "footer_menu_2",
+        "label": "Footer-Menü 2 (Rechtliches)",
+        "default": "footer-legal"
+      },
+      {
+        "type": "text",
+        "id": "footer_menu_2_title",
+        "label": "Titel Footer-Menü 2",
+        "default": "Rechtliches"
+      },
+      {
+        "type": "link_list",
+        "id": "footer_menu_3",
+        "label": "Footer-Menü 3 (Hilfe)",
+        "default": "footer-help"
+      }
+    ]
+  },
+  {
+    "name": "Shopify Varianten-IDs",
+    "settings": [
+      {
+        "type": "paragraph",
+        "content": "Trage hier die Shopify Varianten-IDs für jede Postergröße ein. Lege für jede Größe ein separates Produkt (oder eine Produktvariante) in deinem Shopify-Shop an."
+      },
+      {
+        "type": "text",
+        "id": "variant_id_a4",
+        "label": "Varianten-ID für DIN A4",
+        "info": "Shopify Produkt-Varianten-ID (Zahlen)"
+      },
+      {
+        "type": "text",
+        "id": "variant_id_a3",
+        "label": "Varianten-ID für DIN A3"
+      },
+      {
+        "type": "text",
+        "id": "variant_id_a2",
+        "label": "Varianten-ID für DIN A2"
+      },
+      {
+        "type": "text",
+        "id": "variant_id_a1",
+        "label": "Varianten-ID für DIN A1"
+      },
+      {
+        "type": "text",
+        "id": "variant_id_30x40",
+        "label": "Varianten-ID für 30×40 cm"
+      },
+      {
+        "type": "text",
+        "id": "variant_id_50x70",
+        "label": "Varianten-ID für 50×70 cm"
+      },
+      {
+        "type": "text",
+        "id": "variant_id_70x100",
+        "label": "Varianten-ID für 70×100 cm"
+      }
+    ]
+  },
+  {
+    "name": "Preise",
+    "settings": [
+      {
+        "type": "paragraph",
+        "content": "Preise werden aus Shopify-Produkten bezogen. Diese Werte sind nur für die Anzeige im Konfigurator (JavaScript-Fallback)."
+      },
+      {
+        "type": "text",
+        "id": "price_a4",
+        "label": "Preis DIN A4 (Anzeige)",
+        "default": "19.90"
+      },
+      {
+        "type": "text",
+        "id": "price_a3",
+        "label": "Preis DIN A3 (Anzeige)",
+        "default": "29.90"
+      },
+      {
+        "type": "text",
+        "id": "price_a2",
+        "label": "Preis DIN A2 (Anzeige)",
+        "default": "44.90"
+      },
+      {
+        "type": "text",
+        "id": "price_a1",
+        "label": "Preis DIN A1 (Anzeige)",
+        "default": "69.90"
+      },
+      {
+        "type": "text",
+        "id": "price_30x40",
+        "label": "Preis 30×40 (Anzeige)",
+        "default": "34.90"
+      },
+      {
+        "type": "text",
+        "id": "price_50x70",
+        "label": "Preis 50×70 (Anzeige)",
+        "default": "54.90"
+      },
+      {
+        "type": "text",
+        "id": "price_70x100",
+        "label": "Preis 70×100 (Anzeige)",
+        "default": "79.90"
+      }
+    ]
+  },
+  {
+    "name": "Farben",
+    "settings": [
+      {
+        "type": "color",
+        "id": "color_primary",
+        "label": "Primärfarbe",
+        "default": "#1A1A2E"
+      },
+      {
+        "type": "color",
+        "id": "color_accent",
+        "label": "Akzentfarbe (Rose/Coral)",
+        "default": "#E8495A"
+      },
+      {
+        "type": "color",
+        "id": "color_purple",
+        "label": "Akzentfarbe (Violett)",
+        "default": "#845EC2"
+      },
+      {
+        "type": "color",
+        "id": "color_mint",
+        "label": "Akzentfarbe (Mint)",
+        "default": "#00C9A7"
+      },
+      {
+        "type": "color",
+        "id": "color_bg",
+        "label": "Seitenhintertgrundfarbe",
+        "default": "#F9F8F5"
+      }
+    ]
+  }
+]

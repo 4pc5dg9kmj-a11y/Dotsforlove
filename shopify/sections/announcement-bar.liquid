@@ -1,0 +1,87 @@
+{% comment %}
+  Dots for Love – Announcement Bar
+  Optional top banner for promotions or shipping info.
+{% endcomment %}
+
+{%- if section.settings.show_bar and section.settings.text != blank -%}
+  <div class="announcement-bar"
+       style="background:{{ section.settings.background_color }};
+              color:{{ section.settings.text_color }};">
+    <div class="container">
+      <p>
+        {{ section.settings.text }}
+        {%- if section.settings.link_text != blank and section.settings.link_url != blank -%}
+          <a href="{{ section.settings.link_url }}" class="announcement-link">
+            {{ section.settings.link_text }} →
+          </a>
+        {%- endif -%}
+      </p>
+    </div>
+  </div>
+{%- endif -%}
+
+<style>
+.announcement-bar {
+  padding: 10px 0;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  position: relative;
+  z-index: 1001;
+}
+.announcement-bar + .site-header { top: 40px; }
+.announcement-link {
+  font-weight: 700;
+  text-decoration: underline;
+  margin-left: 8px;
+}
+</style>
+
+{% schema %}
+{
+  "name": "Ankündigungsleiste",
+  "limit": 1,
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_bar",
+      "label": "Ankündigungsleiste anzeigen",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "text",
+      "label": "Text",
+      "default": "✨ Kostenloser Versand ab 50 € · SVG-Datei sofort nach dem Kauf"
+    },
+    {
+      "type": "url",
+      "id": "link_url",
+      "label": "Link URL"
+    },
+    {
+      "type": "text",
+      "id": "link_text",
+      "label": "Link-Text",
+      "default": "Jetzt gestalten"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Hintergrundfarbe",
+      "default": "#1A1A2E"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Textfarbe",
+      "default": "#FFFFFF"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Ankündigungsleiste"
+    }
+  ]
+}
+{% endschema %}
