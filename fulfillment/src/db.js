@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS reminders (
   created_at     TEXT NOT NULL DEFAULT (datetime('now')),
   email          TEXT NOT NULL,
   occasion       TEXT NOT NULL,            -- birthday | anniversary
+  year           INTEGER,                  -- Ursprungsjahr (für Shopify-Tag), optional
   month          INTEGER NOT NULL,         -- 1-12
   day            INTEGER NOT NULL,         -- 1-31
   greeting_id    TEXT,                     -- optionales Gratisbild
@@ -167,11 +168,18 @@ export function getGreeting(id) {
   return db.prepare(`SELECT * FROM greetings WHERE id = ?`).get(id);
 }
 
+// Migration für Bestands-Datenbanken (Spalte kam nachträglich dazu)
+try { db.exec(`ALTER TABLE reminders ADD COLUMN year INTEGER`); } catch { /* existiert schon */ }
+
 export function insertReminder(r) {
   db.prepare(`
-    INSERT INTO reminders (id, email, occasion, month, day, greeting_id, confirm_token)
-    VALUES (@id, @email, @occasion, @month, @day, @greeting_id, @confirm_token)
+    INSERT INTO reminders (id, email, occasion, year, month, day, greeting_id, confirm_token)
+    VALUES (@id, @email, @occasion, @year, @month, @day, @greeting_id, @confirm_token)
   `).run(r);
+}
+
+export function getReminderByToken(token) {
+  return db.prepare(`SELECT * FROM reminders WHERE confirm_token = ?`).get(token);
 }
 
 export function confirmReminder(token) {

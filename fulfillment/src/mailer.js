@@ -49,8 +49,8 @@ const OCCASION_TEXT = {
   birthday: {
     emoji: '🎂',
     name: 'Geburtstag',
-    greetSubject: '🎁 Ein persönlicher Geburtstagsgruß für dich!',
-    greetIntro: 'jemand hat an dich gedacht und dir einen ganz persönlichen Geburtstagsgruß gestaltet',
+    greetSubject: '🎁 Dein Geburtstagsgruß ist fertig!',
+    greetIntro: 'hier ist dein persönlicher Geburtstagsgruß — ein Kunstwerk aus hunderten kleinen Punkten',
     offerSubject: '🎂 In 3 Wochen ist der Geburtstag — dein Geschenk wartet!',
     offerIntro: 'in genau 3 Wochen ist der Geburtstag, an den du erinnert werden wolltest',
     daySubject: '🎉 Heute ist der Geburtstag! Dein Gruß ist bereit',
@@ -59,8 +59,8 @@ const OCCASION_TEXT = {
   anniversary: {
     emoji: '💞',
     name: 'Jahrestag',
-    greetSubject: '💝 Ein Liebesgruß zum Jahrestag für dich!',
-    greetIntro: 'dein Lieblingsmensch hat dir einen ganz persönlichen Gruß zum Jahrestag gestaltet',
+    greetSubject: '💝 Dein Jahrestagsgruß ist fertig!',
+    greetIntro: 'hier ist dein persönlicher Gruß zum Jahrestag — ein Kunstwerk eurer gemeinsamen Zeit',
     offerSubject: '💞 In 3 Wochen ist euer Jahrestag — mach etwas Besonderes daraus!',
     offerIntro: 'in genau 3 Wochen ist euer Jahrestag',
     daySubject: '💝 Heute ist euer Jahrestag! Dein Gruß ist bereit',
@@ -85,25 +85,20 @@ function layout(inner) {
   return html.replaceAll('{{SHOP_URL}}', config.shopUrl);
 }
 
-export function greetingEmail({ occasion, senderName, message }) {
+export function greetingEmail({ occasion }) {
   const t = OCCASION_TEXT[occasion] || OCCASION_TEXT.birthday;
-  const from = senderName ? `<strong>${escapeHtml(senderName)}</strong>` : 'Jemand, der dich mag,';
-  const msg = message
-    ? `<blockquote style="border-left:3px solid #E8495A;margin:16px 0;padding:8px 16px;color:#555;font-style:italic;">${escapeHtml(message)}</blockquote>`
-    : '';
   return {
     subject: t.greetSubject,
     html: layout(`
-      <h1 style="font-size:22px;margin:0 0 16px;">${t.emoji} Für dich!</h1>
+      <h1 style="font-size:22px;margin:0 0 16px;">${t.emoji} Dein Bild ist da!</h1>
       <p>Hallo,</p>
-      <p>${from} — ${t.greetIntro}: ein Kunstwerk aus hunderten kleinen Punkten, nur für dich.</p>
-      ${msg}
+      <p>${t.greetIntro}. <strong>Leite diese E-Mail einfach weiter</strong> oder verschicke das
+      angehängte Bild per WhatsApp — es ist im Handy-Format, perfekt als Hintergrundbild oder zum Teilen.</p>
       <img src="cid:greeting-image" alt="Dein persönlicher Gruß" style="width:100%;border-radius:12px;margin:16px 0;">
-      <p style="font-size:13px;color:#777;">Das Bild ist im Handy-Format angehängt — perfekt als Hintergrundbild oder zum Teilen.</p>
       <p style="text-align:center;margin-top:24px;">
-        <a href="{{SHOP_URL}}" style="background:#E8495A;color:#fff;text-decoration:none;padding:12px 28px;border-radius:999px;font-weight:bold;font-size:14px;">Eigenen Gruß gestalten — kostenlos</a>
+        <a href="{{SHOP_URL}}" style="background:#E8495A;color:#fff;text-decoration:none;padding:12px 28px;border-radius:999px;font-weight:bold;font-size:14px;">Als Poster drucken lassen</a>
       </p>
-    `).replace('{{FOOTER_LINKS}}', 'Du erhältst diese E-Mail, weil jemand dir einen Gruß geschickt hat.'),
+    `).replace('{{FOOTER_LINKS}}', 'Du erhältst diese E-Mail, weil du dein Bild angefordert hast (keine Werbung).'),
   };
 }
 
@@ -168,8 +163,3 @@ export function dayEmail({ occasion, unsubscribeUrl, hasImage }) {
   };
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-  }[c]));
-}

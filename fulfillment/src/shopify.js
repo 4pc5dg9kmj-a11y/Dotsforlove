@@ -75,3 +75,77 @@ export async function fulfillOrder(orderId, trackingInfo = null) {
   if (errs.length) throw new Error(`fulfillmentCreate: ${JSON.stringify(errs)}`);
   return result.fulfillmentCreate.fulfillment;
 }
+
+/**
+ * Legt nach bestätigtem Double-Opt-In einen Shopify-Kunden mit
+ * Marketing-Einwilligung an (bzw. aktualisiert ihn) — damit das
+ * E-Mail-Tool ihn in die Erinnerungs-Kampagne aufnehmen kann.
+ *
+ * Consent: SUBSCRIBED + CONFIRMED_OPT_IN (der Kunde hat den
+ * Bestätigungslink geklickt). Das Anlassdatum landet als Tag,
+ * z.B. "birthday:2026-08-14" bzw. "anniversary:07-23".
+ *
+ * Benötigte Scopes der Custom App: read_customers, write_customers.
+ */
+export async function upsertMarketingCustomer({ email, occasion, year, month, day }) {
+  const pad = (n) => String(n).padStart(2, '0');
+  const dateStr = year
+    ? `${year}-${pad(month)}-${pad(day)}`
+    : `${pad(month)}-${pad(day)}`;
+  const tags = ['erinnerung', `${occasion}:${dateStr}`];
+
+  const consentInput = {
+    marketingState: 'SUBSCRIBED',
+    marketingOptInLevel: 'CONFIRMED_OPT_IN',
+    consentUpdatedAt: new Date().toISOString(),
+  };
+
+  // 1. Neu anlegen
+  const created = await gql(`
+    mutation CreateCustomer($input: CustomerInput!) {
+      customerCreate(input: $input) {
+        customer { id }
+        userErrors { field message }
+      }
+    }`, {
+    input: { email, tags, emailMarketingConsent: consentInput },
+  });
+
+  const createErrs = created.customerCreate?.userErrors || [];
+  if (!createErrs.length) return created.customerCreate.customer;
+
+  const emailTaken = createErrs.some(e => /taken|exists/i.test(e.message));
+  if (!emailTaken) throw new Error(`customerCreate: ${JSON.stringify(createErrs)}`);
+
+  // 2. Existiert schon → Kunden suchen, Consent + Tags aktualisieren
+  const found = await gql(`
+    query FindCustomer($q: String!) {
+      customers(first: 1, query: $q) {
+        edges { node { id } }
+      }
+    }`, { q: `email:${email}` });
+
+  const customerId = found.customers?.edges?.[0]?.node?.id;
+  if (!customerId) throw new Error(`Kunde ${email} weder anlegbar noch auffindbar`);
+
+  const updated = await gql(`
+    mutation UpdateConsent($input: CustomerEmailMarketingConsentUpdateInput!) {
+      customerEmailMarketingConsentUpdate(input: $input) {
+        customer { id }
+        userErrors { field message }
+      }
+    }`, {
+    input: { customerId, emailMarketingConsent: consentInput },
+  });
+  const updateErrs = updated.customerEmailMarketingConsentUpdate?.userErrors || [];
+  if (updateErrs.length) throw new Error(`consentUpdate: ${JSON.stringify(updateErrs)}`);
+
+  await gql(`
+    mutation AddTags($id: ID!, $tags: [String!]!) {
+      tagsAdd(id: $id, tags: $tags) {
+        userErrors { field message }
+      }
+    }`, { id: customerId, tags });
+
+  return { id: customerId };
+}

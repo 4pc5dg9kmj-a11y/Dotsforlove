@@ -118,18 +118,26 @@ Trage in der `.env` eine `NOTIFY_WEBHOOK_URL` ein (Discord- oder Slack-Incoming-
 
 Zwei kostenlose virale Features auf der Seite **„Gratis-Gruß"** (`gratis.html` bzw. Shopify-Seite mit Template `page.gratis-gruss`):
 
-- **Geburtstagswunsch-Generator** und **Jahrestagsgruß für Paare**: Foto hochladen → Dot-Art-Bild in **Handy-Auflösung** (1080 px, mit eingebranntem `dots-for-love.com`-Branding — bewusst **nicht druckbar**) → aufs Handy laden oder **direkt per E-Mail verschicken**.
-- **Erinnerungsservice** (das eigentliche Marketing):
-  1. Besucher trägt E-Mail + Datum ein (Geburtstag/Jahrestag) und bestätigt per **Double-Opt-In-Link** (DSGVO-konform, Abmeldelink in jeder Mail).
-  2. **3 Wochen vorher** (einstellbar via `OFFER_LEAD_DAYS`): automatische E-Mail mit **Rabattcode ERINNERUNG5 (5 %)** aufs gedruckte Poster + dem Gratisbild — genug Zeit für Bestellung und Lieferung.
-  3. **Am Tag selbst:** E-Mail mit dem Bild, das man direkt an die Person **weiterleiten** kann.
-  4. Wiederholt sich **jedes Jahr automatisch**.
+- **Geburtstagswunsch-Generator** und **Jahrestagsgruß für Paare**: Foto hochladen → Dot-Art-Bild in **Handy-Auflösung** (1080 px, mit eingebranntem `dots-for-love.com`-Branding — bewusst **nicht druckbar**).
+- **Kein Download:** Das Bild wird **ausschließlich per E-Mail** an den Ersteller versendet. Dafür ist eine E-Mail-Adresse + Häkchen 1 nötig.
+- **Print direkt mitbestellen:** Druckformat wählen → Preis sofort sichtbar (aus den Produktvarianten) → Warenkorb. Gratis-Bild und Druckkauf in einem Flow. *(Checkout setzt aktives Shopify Payments voraus.)*
+
+**Zwei getrennte Häkchen (DSGVO):**
+1. **„Sende mir mein Bild an diese E-Mail"** — erforderlich, rein transaktional, keine Werbung. Ohne dieses Häkchen kein Versand.
+2. **„Ja, erinnere mich vor dem Tag und sende mir Angebote"** — separates, **nicht vorangekreuztes** Opt-in. Nur wer es setzt, kommt in die Erinnerungs-Kampagne.
+
+**Erinnerungs-Kampagne (nur mit Häkchen 2):**
+1. Double-Opt-In-Bestätigung per Link (Abmeldelink in jeder Mail).
+2. **Nach der Bestätigung** legt der Hub automatisch einen **Shopify-Kunden mit Marketing-Einwilligung** an (`SUBSCRIBED` / `CONFIRMED_OPT_IN`) — mit Anlassdatum als Tag, z.B. `birthday:2026-08-14`. Daran kann das E-Mail-Tool/Shopify-Automationen anknüpfen.
+3. **3 Wochen vorher** (einstellbar via `OFFER_LEAD_DAYS`): Angebots-Mail mit Rabattcode (Standard 15 %, `DISCOUNT_CODE`/`DISCOUNT_PERCENT`) + Gratisbild.
+4. **Am Tag selbst:** E-Mail mit dem Bild zum direkten **Weiterleiten**. Wiederholt sich jedes Jahr.
 
 **Einrichtung:**
-1. SMTP-Zugang in der `.env` eintragen (`SMTP_HOST` etc.) — z.B. [Brevo](https://www.brevo.com) (kostenlos bis 300 Mails/Tag) oder dein Hoster. Ohne SMTP werden Mails nur geloggt.
-2. Der Rabattcode **ERINNERUNG5** ist bereits in deinem Shopify-Store angelegt (5 %, alle Produkte). Prozentsatz ändern: neuen Code in Shopify anlegen + `DISCOUNT_CODE`/`DISCOUNT_PERCENT` in der `.env` anpassen.
-3. Shopify-Seite anlegen: Titel „Gratis-Gruß", Handle `gratis-gruss`, Template `page.gratis-gruss`. Die Datei `assets/greeting.js` als `greeting.js` in die Theme-Assets kopieren.
-4. Spam-Schutz ist eingebaut (max. 5 Grüße/Erinnerungen pro Stunde und IP).
+1. SMTP-Zugang in der `.env` eintragen (`SMTP_HOST` etc.) — z.B. [Brevo](https://www.brevo.com) (kostenlos bis 300 Mails/Tag). Ohne SMTP werden Mails nur geloggt.
+2. Kampagnen-Rabattcode (15 %, 1× pro Kunde) in Shopify anlegen und in `DISCOUNT_CODE`/`DISCOUNT_PERCENT` eintragen. (Der alte Code ERINNERUNG5 mit 5 % existiert ebenfalls bereits.)
+3. Custom-App-Scopes erweitern: zusätzlich `read_customers`, `write_customers` (für die Marketing-Opt-ins).
+4. Shopify-Seite anlegen: Titel „Gratis-Gruß", Handle `gratis-gruss`, Template `page.gratis-gruss`. Die Datei `assets/greeting.js` als `greeting.js` in die Theme-Assets kopieren.
+5. Spam-Schutz ist eingebaut (max. 5 Grüße/Erinnerungen pro Stunde und IP).
 
 ## 8. Status prüfen
 

@@ -14,7 +14,7 @@ import { startEtsyPolling } from './etsy.js';
 import { notify } from './notify.js';
 import {
   storeGreeting, sendGreetingNow, createReminder,
-  confirmReminder, deleteReminderByToken,
+  confirmReminderAndSync, deleteReminderByToken,
   startReminderScheduler, rateLimit,
 } from './greetings.js';
 
@@ -180,36 +180,42 @@ app.post('/api/print-queue/:id/error', agentAuth, (req, res) => {
    5. GRATIS-GRÜSSE & ERINNERUNGEN (Marketing)
    ══════════════════════════════════════════════════════════ */
 
-// Gruß erzeugen + optional sofort per E-Mail verschicken
+// Gruß erzeugen + transaktional an die eigene E-Mail senden.
+// KEIN Download-Weg: ohne E-Mail + Häkchen 1 gibt es kein Bild.
 app.post('/api/greetings', async (req, res) => {
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
   if (!rateLimit(ip, 'greeting', 5)) {
     return res.status(429).json({ error: 'Zu viele Grüße — bitte später erneut versuchen.' });
   }
   try {
-    const { imageDataUrl, occasion, senderName, recipientEmail, message } = req.body || {};
-    const { id } = storeGreeting({ imageDataUrl, occasion, senderName });
-    if (recipientEmail) {
-      await sendGreetingNow({ greetingId: id, recipientEmail, message });
+    const { imageDataUrl, occasion, email, consentTransactional } = req.body || {};
+    if (!consentTransactional) {
+      return res.status(400).json({ error: 'Bitte bestätige, dass wir dir dein Bild per E-Mail senden dürfen.' });
     }
-    res.json({ greetingId: id, sent: !!recipientEmail });
+    if (!email) {
+      return res.status(400).json({ error: 'E-Mail-Adresse fehlt — das Bild wird ausschließlich per E-Mail versendet.' });
+    }
+    const { id } = storeGreeting({ imageDataUrl, occasion });
+    await sendGreetingNow({ greetingId: id, email });
+    res.json({ greetingId: id, sent: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-// Erinnerung anlegen (Double-Opt-In-Mail geht sofort raus)
+// Erinnerung anlegen — NUR mit separatem Marketing-Opt-in (Häkchen 2).
+// Aktiv wird sie erst nach Klick auf den Double-Opt-In-Link.
 app.post('/api/reminders', async (req, res) => {
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
   if (!rateLimit(ip, 'reminder', 5)) {
     return res.status(429).json({ error: 'Zu viele Anfragen — bitte später erneut versuchen.' });
   }
   try {
-    const { email, occasion, month, day, greetingId, consent } = req.body || {};
+    const { email, occasion, year, month, day, greetingId, consent } = req.body || {};
     if (!consent) {
-      return res.status(400).json({ error: 'Bitte der E-Mail-Erinnerung zustimmen (DSGVO).' });
+      return res.status(400).json({ error: 'Erinnerungen brauchen deine ausdrückliche Zustimmung (DSGVO).' });
     }
-    const { id } = await createReminder({ email, occasion, month, day, greetingId });
+    const { id } = await createReminder({ email, occasion, year, month, day, greetingId });
     res.json({ reminderId: id, confirmationRequired: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -222,8 +228,8 @@ const tinyPage = (title, text) => `<!DOCTYPE html><html lang="de"><head><meta ch
 .card{background:#fff;border-radius:16px;padding:40px;max-width:420px;text-align:center;box-shadow:0 2px 12px rgba(26,26,46,.08)}
 a{color:#E8495A}</style></head><body><div class="card"><h1 style="font-size:22px">${title}</h1><p>${text}</p></div></body></html>`;
 
-app.get('/api/reminders/confirm/:token', (req, res) => {
-  const ok = confirmReminder(req.params.token);
+app.get('/api/reminders/confirm/:token', async (req, res) => {
+  const ok = await confirmReminderAndSync(req.params.token);
   res.status(ok ? 200 : 404).send(ok
     ? tinyPage('Erinnerung aktiviert 🎉', 'Wir melden uns 3 Wochen vor dem großen Tag mit deinem Rabatt — und am Tag selbst mit deinem Gratisbild.')
     : tinyPage('Link ungültig', 'Diese Bestätigung ist nicht (mehr) gültig.'));

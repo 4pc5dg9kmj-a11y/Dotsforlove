@@ -96,38 +96,52 @@
       </div>
 
       <div class="greet-actions" id="greetActions">
-        <button class="btn btn-primary" id="greetDownload">Aufs Handy laden 📲</button>
-
+        <!-- E-Mail-Versand (transaktional) + optionales Marketing-Opt-in -->
         <form class="greet-form" id="greetSendForm">
-          <h3>💌 Direkt per E-Mail verschicken</h3>
-          <input type="email" id="greetRecipient" placeholder="E-Mail der beschenkten Person" required />
-          <input type="text" id="greetSenderName" placeholder="Dein Name (optional)" maxlength="80" />
-          <textarea id="greetMessage" placeholder="Persönliche Nachricht (optional)" maxlength="500"></textarea>
-          <button class="btn btn-primary" type="submit" id="greetSendBtn">Gruß verschicken 💌</button>
-          <div class="greet-success" id="greetSendSuccess" hidden>Verschickt! 🎉 Der Gruß ist auf dem Weg.</div>
-        </form>
-
-        <form class="greet-form" id="greetReminderForm">
-          <h3>🔔 Nie wieder vergessen</h3>
+          <h3>💌 Dein Bild per E-Mail erhalten</h3>
           <p style="font-size:.85rem;color:#777;margin:0 0 10px;">
-            Wir erinnern dich <strong>{{ section.settings.lead_weeks }} Wochen vorher</strong> mit
-            <strong>{{ section.settings.discount_percent }}&nbsp;% Rabatt</strong> aufs gedruckte Poster –
-            und schicken dir am Tag selbst dein kostenloses Bild zum Weiterleiten.
+            Wir senden dir das fertige Bild an deine E-Mail-Adresse —
+            von dort kannst du es direkt weiterschicken.
           </p>
-          <input type="email" id="greetReminderEmail" placeholder="Deine E-Mail-Adresse" required />
-          <input type="date" id="greetReminderDate" required aria-label="Datum des Geburtstags oder Jahrestags" />
+          <input type="email" id="greetEmail" placeholder="Deine E-Mail-Adresse" required autocomplete="email" />
           <label class="consent">
-            <input type="checkbox" id="greetReminderConsent" required />
-            <span>Ja, erinnert mich per E-Mail an diesen Tag (Angebots- und Erinnerungsmail).
-            Abbestellen jederzeit per Link möglich.</span>
+            <input type="checkbox" id="greetSendConsent" required />
+            <span><strong>Sende mir mein Bild an diese E-Mail.</strong>
+            (Erforderlich, um das Bild zu erhalten — keine Werbung.)</span>
           </label>
-          <button class="btn btn-primary" type="submit" id="greetReminderBtn">Erinnere mich 🔔</button>
-          <div class="greet-success" id="greetReminderSuccess" hidden>Fast fertig! Bitte bestätige den Link in deinem Postfach. 📬</div>
+          <label class="consent">
+            <input type="checkbox" id="greetMarketingOptIn" />
+            <span>Ja, erinnere mich <strong>vor dem Tag</strong> und sende mir Angebote
+            (z.&nbsp;B. {{ section.settings.discount_percent }}&nbsp;% Rabatt aufs gedruckte Poster,
+            {{ section.settings.lead_weeks }} Wochen vorher). Freiwillig — Abbestellen jederzeit per Link.</span>
+          </label>
+          <div id="greetDateWrap" hidden>
+            <input type="date" id="greetReminderDate" aria-label="Datum des Geburtstags oder Jahrestags" />
+            <p style="font-size:.78rem;color:#999;margin:0 0 10px;">
+              An welchem Tag ist der Geburtstag bzw. Jahrestag?
+            </p>
+          </div>
+          <button class="btn btn-primary" type="submit" id="greetSendBtn">Bild an mich senden 💌</button>
+          <div class="greet-success" id="greetSendSuccess" hidden>Dein Bild ist unterwegs! 📬</div>
         </form>
 
-        <div class="greet-upsell">
-          <p>Gefällt dir dein Motiv? Als <strong>gedrucktes Poster</strong> in Galerie-Qualität wird daraus ein Geschenk fürs Leben.</p>
-          <a href="{{ pages['poster-gestalten'].url | default: '/pages/poster-gestalten' }}" class="btn btn-primary btn-sm">Als Poster drucken lassen →</a>
+        <!-- Print direkt mitbestellen (gleiches Produkt wie im Konfigurator) -->
+        <div class="greet-form">
+          <h3>🖼️ Als Poster drucken lassen</h3>
+          <p style="font-size:.85rem;color:#777;margin:0 0 10px;">
+            Dein Motiv in Galerie-Qualität — ohne Branding-Leiste, in voller Druckauflösung.
+          </p>
+          <div class="greet-formats" style="margin-bottom:12px;">
+            <button type="button" class="greet-format greet-print-size" data-size="A4">A4</button>
+            <button type="button" class="greet-format greet-print-size active" data-size="A3">A3</button>
+            <button type="button" class="greet-format greet-print-size" data-size="50x70">50×70</button>
+            <button type="button" class="greet-format greet-print-size" data-size="70x100">70×100</button>
+          </div>
+          <p style="font-size:1.3rem;font-weight:700;margin:0 0 12px;">
+            <span id="greetPrintPrice">{{ settings.price_a3 }} €</span>
+            <span style="font-size:.78rem;color:#999;font-weight:400;">inkl. MwSt., zzgl. Versand</span>
+          </p>
+          <button type="button" class="btn btn-primary" id="greetPrintBtn">Als Poster in den Warenkorb 🛒</button>
         </div>
       </div>
     </div>
@@ -144,6 +158,15 @@
   </div>
 </main>
 
+<script>
+  // Live-Preise aus den Theme-Einstellungen für die Sofort-Preisanzeige
+  window.DotsForLovePrices = {
+    'A4':     '{{ settings.price_a4 }}',
+    'A3':     '{{ settings.price_a3 }}',
+    '50x70':  '{{ settings.price_50x70 }}',
+    '70x100': '{{ settings.price_70x100 }}',
+  };
+</script>
 {{ 'greeting.js' | asset_url | script_tag }}
 
 {% schema %}
@@ -163,7 +186,7 @@
       "min": 5,
       "max": 25,
       "step": 5,
-      "default": 5,
+      "default": 15,
       "info": "Muss zum Rabattcode im Fulfillment-Hub passen (DISCOUNT_PERCENT)"
     },
     {

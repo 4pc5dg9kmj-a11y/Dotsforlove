@@ -4,11 +4,12 @@ import path from 'node:path';
 import { config } from './config.js';
 import {
   insertGreeting, getGreeting, insertReminder, confirmReminder,
-  deleteReminderByToken, remindersOnDate, markReminderSent,
+  getReminderByToken, deleteReminderByToken, remindersOnDate, markReminderSent,
 } from './db.js';
 import {
   sendMail, greetingEmail, confirmEmail, offerEmail, dayEmail,
 } from './mailer.js';
+import { upsertMarketingCustomer } from './shopify.js';
 
 const GREETINGS_DIR = path.join(config.dataDir, 'greetings');
 fs.mkdirSync(GREETINGS_DIR, { recursive: true });
@@ -53,19 +54,19 @@ export function storeGreeting({ imageDataUrl, occasion, senderName }) {
   return { id, pngPath };
 }
 
-/** Gruß sofort per E-Mail an den Empfänger senden. */
-export async function sendGreetingNow({ greetingId, recipientEmail, message }) {
-  if (!EMAIL_RE.test(recipientEmail || '')) throw new Error('Ungültige Empfänger-E-Mail');
+/**
+ * Bild transaktional an die E-Mail des Erstellers senden.
+ * Voraussetzung: Häkchen 1 („Sende mir mein Bild") wurde gesetzt —
+ * das prüft der Endpoint. Reine Transaktionsmail, keine Werbung.
+ */
+export async function sendGreetingNow({ greetingId, email }) {
+  if (!EMAIL_RE.test(email || '')) throw new Error('Ungültige E-Mail-Adresse');
   const g = getGreeting(greetingId);
   if (!g) throw new Error('Gruß nicht gefunden');
 
-  const tpl = greetingEmail({
-    occasion: g.occasion,
-    senderName: g.sender_name,
-    message: String(message || '').slice(0, 500),
-  });
+  const tpl = greetingEmail({ occasion: g.occasion });
   await sendMail({
-    to: recipientEmail,
+    to: email,
     subject: tpl.subject,
     html: tpl.html,
     attachmentPath: g.png_path,
@@ -74,9 +75,10 @@ export async function sendGreetingNow({ greetingId, recipientEmail, message }) {
 }
 
 /** Erinnerung anlegen + Double-Opt-In-Mail senden (DSGVO). */
-export async function createReminder({ email, occasion, month, day, greetingId }) {
+export async function createReminder({ email, occasion, year, month, day, greetingId }) {
   if (!EMAIL_RE.test(email || '')) throw new Error('Ungültige E-Mail-Adresse');
   const m = parseInt(month, 10), d = parseInt(day, 10);
+  const y = year ? parseInt(year, 10) : null;
   if (!(m >= 1 && m <= 12) || !(d >= 1 && d <= 31)) throw new Error('Ungültiges Datum');
   if (greetingId && !getGreeting(greetingId)) throw new Error('greetingId unbekannt');
 
@@ -85,7 +87,7 @@ export async function createReminder({ email, occasion, month, day, greetingId }
   insertReminder({
     id, email,
     occasion: occasion === 'anniversary' ? 'anniversary' : 'birthday',
-    month: m, day: d,
+    year: y, month: m, day: d,
     greeting_id: greetingId || null,
     confirm_token: confirmToken,
   });
@@ -98,7 +100,35 @@ export async function createReminder({ email, occasion, month, day, greetingId }
   return { id };
 }
 
-export { confirmReminder, deleteReminderByToken };
+/**
+ * Double-Opt-In-Bestätigung: Erinnerung aktivieren UND den Kunden
+ * mit Marketing-Einwilligung (SUBSCRIBED / CONFIRMED_OPT_IN) in
+ * Shopify anlegen, inkl. Anlassdatum als Tag. Der Shopify-Sync ist
+ * Best-Effort — ein API-Fehler blockiert die Bestätigung nicht.
+ */
+export async function confirmReminderAndSync(token) {
+  const reminder = getReminderByToken(token);
+  const ok = confirmReminder(token);
+  if (!ok || !reminder) return false;
+
+  if (config.shopify.adminToken) {
+    try {
+      await upsertMarketingCustomer({
+        email: reminder.email,
+        occasion: reminder.occasion,
+        year: reminder.year,
+        month: reminder.month,
+        day: reminder.day,
+      });
+      console.log(`[reminder] Shopify-Kunde mit Marketing-Consent: ${reminder.email}`);
+    } catch (err) {
+      console.error(`[reminder] Shopify-Kunden-Sync fehlgeschlagen (${reminder.email}):`, err.message);
+    }
+  }
+  return true;
+}
+
+export { deleteReminderByToken };
 
 /* ══════════════════════════════════════════════════════════
    ERINNERUNGS-SCHEDULER
