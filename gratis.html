@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gratis Geburtstags- & Jahrestagsgruß – Dots for Love</title>
+  <meta name="description" content="Verschicke deinen ganz persönlichen Geburtstagswunsch oder Jahrestagsgruß – kostenlos, als Dot-Art-Bild im Handy-Format." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/style.css" />
+  <style>
+    /* ── Seiten-spezifische Styles für den Gratis-Generator ── */
+    .greet-main { max-width: 1180px; margin: 0 auto; padding: 110px 24px 64px; }
+    .greet-head { text-align: center; max-width: 640px; margin: 0 auto 40px; }
+    .greet-badge { display:inline-block; background:#E8495A; color:#fff; font-size:.75rem; font-weight:700;
+      letter-spacing:.08em; text-transform:uppercase; padding:6px 16px; border-radius:999px; margin-bottom:16px; }
+    .greet-head h1 { font-family:'DM Serif Display',serif; font-size:clamp(1.9rem,4vw,2.8rem); margin:0 0 12px; }
+    .greet-head h1 em { color:#E8495A; }
+    .greet-head p { color:#666; font-size:1.05rem; margin:0; }
+    .occasion-toggle { display:flex; justify-content:center; gap:10px; margin:24px 0 0; }
+    .occasion-btn { padding:12px 26px; border-radius:999px; border:2px solid #E5E2DC; background:#fff;
+      font-family:inherit; font-size:.95rem; font-weight:600; cursor:pointer; transition:.25s; }
+    .occasion-btn.active, .occasion-btn:hover { border-color:#E8495A; color:#E8495A; background:#FDF0F1; }
+    .greet-grid { display:grid; grid-template-columns: 1fr 420px; gap:40px; margin-top:40px; align-items:start; }
+    .greet-panel { background:#fff; border-radius:20px; padding:28px; box-shadow:0 2px 16px rgba(26,26,46,.07); }
+    .greet-step { font-size:.75rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#999; margin:22px 0 10px; }
+    .greet-step:first-child { margin-top:0; }
+    .greet-upload { border:2px dashed #D8D4CC; border-radius:14px; padding:28px; text-align:center; cursor:pointer;
+      position:relative; transition:.25s; }
+    .greet-upload.drag-over, .greet-upload:hover { border-color:#E8495A; background:#FDF0F1; }
+    .greet-upload.has-image { border-style:solid; border-color:#00C9A7; }
+    .greet-upload input { position:absolute; inset:0; opacity:0; cursor:pointer; }
+    .greet-upload p { margin:0; color:#666; font-size:.9rem; }
+    .greet-shapes, .greet-formats { display:flex; gap:8px; flex-wrap:wrap; }
+    .greet-shape, .greet-format { padding:10px 16px; border-radius:10px; border:2px solid #E5E2DC; background:#fff;
+      font-family:inherit; font-size:.9rem; font-weight:600; cursor:pointer; transition:.2s; }
+    .greet-shape.active, .greet-format.active, .greet-shape:hover, .greet-format:hover {
+      border-color:#E8495A; color:#E8495A; background:#FDF0F1; }
+    .greet-preview-wrap { position:sticky; top:100px; text-align:center; }
+    .greet-phone { display:inline-block; background:#1A1A2E; border-radius:36px; padding:14px; box-shadow:0 16px 48px rgba(26,26,46,.25); }
+    .greet-phone canvas { display:block; width:260px; height:auto; border-radius:24px; background:#12122a; }
+    .greet-note { font-size:.78rem; color:#999; margin-top:14px; }
+    .greet-actions { margin-top:20px; display:none; flex-direction:column; gap:18px; text-align:left; }
+    .greet-actions.visible { display:flex; }
+    .greet-form { background:#fff; border-radius:14px; padding:18px; box-shadow:0 2px 12px rgba(26,26,46,.07); }
+    .greet-form h3 { margin:0 0 12px; font-size:1rem; }
+    .greet-form input[type=email], .greet-form input[type=text], .greet-form input[type=date], .greet-form textarea {
+      width:100%; box-sizing:border-box; padding:11px 12px; border:1.5px solid #E5E2DC; border-radius:10px;
+      font-family:inherit; font-size:.9rem; margin-bottom:10px; }
+    .greet-form textarea { resize:vertical; min-height:60px; }
+    .greet-form label.consent { display:flex; gap:8px; align-items:flex-start; font-size:.78rem; color:#777; margin-bottom:10px; cursor:pointer; }
+    .greet-success { background:#E6FAF5; border:1.5px solid #00C9A7; color:#0A7C68; border-radius:10px; padding:10px 14px;
+      font-size:.85rem; margin-top:10px; }
+    .greet-upsell { background:linear-gradient(135deg,#1A1A2E,#2A2A4E); color:#fff; border-radius:14px; padding:20px; text-align:center; }
+    .greet-upsell p { margin:0 0 12px; font-size:.9rem; opacity:.9; }
+    @media (max-width: 900px) {
+      .greet-grid { grid-template-columns:1fr; }
+      .greet-preview-wrap { position:static; order:-1; }
+    }
+  </style>
+</head>
+<body class="greeting-page">
+
+  <header class="site-header site-header--dark" id="site-header">
+    <div class="container header-inner">
+      <a href="index.html" class="logo">
+        <span class="logo-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span class="logo-text">Dots <em>for Love</em></span>
+      </a>
+      <a href="configurator.html" class="btn btn-primary btn-sm">Poster gestalten →</a>
+    </div>
+  </header>
+
+  <main class="greet-main">
+    <div class="greet-head">
+      <span class="greet-badge">100 % kostenlos</span>
+      <h1 id="greetTitle">Dein persönlicher <em>Geburtstagswunsch</em></h1>
+      <p id="greetSub">Verwandle ein Foto in einen Gruß aus hunderten Punkten – kostenlos verschicken!</p>
+      <div class="occasion-toggle" role="radiogroup" aria-label="Anlass wählen">
+        <button class="occasion-btn active" data-occasion="birthday" role="radio" aria-checked="true">🎂 Geburtstag</button>
+        <button class="occasion-btn" data-occasion="anniversary" role="radio" aria-checked="false">💞 Jahrestag</button>
+      </div>
+    </div>
+
+    <div class="greet-grid">
+      <!-- ── Links: Einstellungen + Aktionen ── -->
+      <div>
+        <div class="greet-panel">
+          <div class="greet-step">1 · Foto hochladen</div>
+          <div class="greet-upload" id="greetUploadZone">
+            <input type="file" id="greetImageInput" accept="image/jpeg,image/png,image/webp" aria-label="Foto auswählen" />
+            <p id="greetUploadLabel"><strong>Foto hierher ziehen</strong> oder tippen zum Auswählen</p>
+          </div>
+
+          <div class="greet-step">2 · Symbol</div>
+          <div class="greet-shapes" role="radiogroup" aria-label="Symbol">
+            <button class="greet-shape" data-shape="circle">● Punkte</button>
+            <button class="greet-shape active" data-shape="heart">♥ Herzen</button>
+            <button class="greet-shape" data-shape="square">■ Quadrate</button>
+            <button class="greet-shape" data-shape="triangle">▲ Dreiecke</button>
+          </div>
+
+          <div class="greet-step">3 · Format</div>
+          <div class="greet-formats" role="radiogroup" aria-label="Format">
+            <button class="greet-format active" data-format="wallpaper">📱 Handy-Hintergrund</button>
+            <button class="greet-format" data-format="square">◻ Zum Teilen</button>
+          </div>
+        </div>
+
+        <div class="greet-actions" id="greetActions">
+          <!-- Download -->
+          <button class="btn btn-primary" id="greetDownload">Aufs Handy laden 📲</button>
+
+          <!-- Per E-Mail verschicken -->
+          <form class="greet-form" id="greetSendForm">
+            <h3>💌 Direkt per E-Mail verschicken</h3>
+            <input type="email" id="greetRecipient" placeholder="E-Mail der beschenkten Person" required />
+            <input type="text" id="greetSenderName" placeholder="Dein Name (optional)" maxlength="80" />
+            <textarea id="greetMessage" placeholder="Persönliche Nachricht (optional)" maxlength="500"></textarea>
+            <button class="btn btn-primary" type="submit" id="greetSendBtn">Gruß verschicken 💌</button>
+            <div class="greet-success" id="greetSendSuccess" hidden>
+              Verschickt! 🎉 Der Gruß ist auf dem Weg.
+            </div>
+          </form>
+
+          <!-- Erinnerung -->
+          <form class="greet-form" id="greetReminderForm">
+            <h3>🔔 Nie wieder vergessen</h3>
+            <p style="font-size:.85rem;color:#777;margin:0 0 10px;">
+              Wir erinnern dich <strong>3 Wochen vorher</strong> mit einem exklusiven
+              Rabatt aufs gedruckte Poster – und schicken dir am Tag selbst dein
+              kostenloses Bild zum Weiterleiten.
+            </p>
+            <input type="email" id="greetReminderEmail" placeholder="Deine E-Mail-Adresse" required />
+            <input type="date" id="greetReminderDate" required aria-label="Datum des Geburtstags oder Jahrestags" />
+            <label class="consent">
+              <input type="checkbox" id="greetReminderConsent" required />
+              <span>Ja, erinnert mich per E-Mail an diesen Tag (Angebots- und Erinnerungsmail).
+              Abbestellen jederzeit per Link möglich.</span>
+            </label>
+            <button class="btn btn-primary" type="submit" id="greetReminderBtn">Erinnere mich 🔔</button>
+            <div class="greet-success" id="greetReminderSuccess" hidden>
+              Fast fertig! Bitte bestätige den Link in deinem Postfach. 📬
+            </div>
+          </form>
+
+          <!-- Upsell -->
+          <div class="greet-upsell">
+            <p>Gefällt dir dein Motiv? Als <strong>gedrucktes Poster</strong> in Galerie-Qualität
+            wird daraus ein Geschenk fürs Leben.</p>
+            <a href="configurator.html" class="btn btn-primary btn-sm">Als Poster drucken lassen →</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Rechts: Handy-Vorschau ── -->
+      <div class="greet-preview-wrap">
+        <div class="greet-phone">
+          <canvas id="greetCanvas" width="1080" height="2340" aria-label="Vorschau deines Grußes"></canvas>
+        </div>
+        <p class="greet-note">
+          Handy-Auflösung (1080 px) · nicht für den Druck geeignet<br />
+          Für Druckqualität: <a href="configurator.html">Poster-Konfigurator</a>
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <script src="assets/configurator.js"></script>
+  <script src="assets/greeting.js"></script>
+</body>
+</html>

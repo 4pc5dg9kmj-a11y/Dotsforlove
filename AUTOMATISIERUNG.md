@@ -114,7 +114,24 @@ Der Agent fragt jede Minute nach neuen Jobs, lädt die 300-DPI-Druckdatei herunt
 
 Trage in der `.env` eine `NOTIFY_WEBHOOK_URL` ein (Discord- oder Slack-Incoming-Webhook). Du bekommst dann Push-Meldungen bei: Gelato-Übergabe ✅, neuem Heimdruck-Job 🖨️, fehlendem Etsy-Design ⚠️ und Fehlern ❌.
 
-## 7. Status prüfen
+## 7. Gratis-Grüße & Erinnerungs-Marketing 🎁
+
+Zwei kostenlose virale Features auf der Seite **„Gratis-Gruß"** (`gratis.html` bzw. Shopify-Seite mit Template `page.gratis-gruss`):
+
+- **Geburtstagswunsch-Generator** und **Jahrestagsgruß für Paare**: Foto hochladen → Dot-Art-Bild in **Handy-Auflösung** (1080 px, mit eingebranntem `dots-for-love.com`-Branding — bewusst **nicht druckbar**) → aufs Handy laden oder **direkt per E-Mail verschicken**.
+- **Erinnerungsservice** (das eigentliche Marketing):
+  1. Besucher trägt E-Mail + Datum ein (Geburtstag/Jahrestag) und bestätigt per **Double-Opt-In-Link** (DSGVO-konform, Abmeldelink in jeder Mail).
+  2. **3 Wochen vorher** (einstellbar via `OFFER_LEAD_DAYS`): automatische E-Mail mit **Rabattcode ERINNERUNG5 (5 %)** aufs gedruckte Poster + dem Gratisbild — genug Zeit für Bestellung und Lieferung.
+  3. **Am Tag selbst:** E-Mail mit dem Bild, das man direkt an die Person **weiterleiten** kann.
+  4. Wiederholt sich **jedes Jahr automatisch**.
+
+**Einrichtung:**
+1. SMTP-Zugang in der `.env` eintragen (`SMTP_HOST` etc.) — z.B. [Brevo](https://www.brevo.com) (kostenlos bis 300 Mails/Tag) oder dein Hoster. Ohne SMTP werden Mails nur geloggt.
+2. Der Rabattcode **ERINNERUNG5** ist bereits in deinem Shopify-Store angelegt (5 %, alle Produkte). Prozentsatz ändern: neuen Code in Shopify anlegen + `DISCOUNT_CODE`/`DISCOUNT_PERCENT` in der `.env` anpassen.
+3. Shopify-Seite anlegen: Titel „Gratis-Gruß", Handle `gratis-gruss`, Template `page.gratis-gruss`. Die Datei `assets/greeting.js` als `greeting.js` in die Theme-Assets kopieren.
+4. Spam-Schutz ist eingebaut (max. 5 Grüße/Erinnerungen pro Stunde und IP).
+
+## 8. Status prüfen
 
 ```
 GET https://DEIN-HUB/api/status
@@ -134,3 +151,5 @@ zeigt: aktueller Monatsumsatz, Schwelle, ob Heimdruck gerade aktiv ist, Etsy-Sta
 - [ ] Umsatzschwelle nach Wunsch gesetzt
 - [ ] Etsy-Listing mit SKUs angelegt, `ETSY_ENABLED=true` (optional)
 - [ ] Discord/Slack-Benachrichtigung eingerichtet (optional)
+- [ ] SMTP eingetragen, Shopify-Seite `gratis-gruss` angelegt (Gratis-Grüße & Erinnerungen)
+- [ ] Testlauf: Erinnerung mit Datum in 21 Tagen anlegen → Bestätigungslink klicken → Angebots-Mail kommt

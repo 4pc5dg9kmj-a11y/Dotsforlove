@@ -12,6 +12,11 @@ import { processPaidOrder, extractItemMeta } from './orders.js';
 import { renderPng } from './render.js';
 import { startEtsyPolling } from './etsy.js';
 import { notify } from './notify.js';
+import {
+  storeGreeting, sendGreetingNow, createReminder,
+  confirmReminder, deleteReminderByToken,
+  startReminderScheduler, rateLimit,
+} from './greetings.js';
 
 const app = express();
 
@@ -172,7 +177,67 @@ app.post('/api/print-queue/:id/error', agentAuth, (req, res) => {
 });
 
 /* ══════════════════════════════════════════════════════════
-   5. NACHGEREICHTE DESIGNS (z.B. Etsy) & STATUS
+   5. GRATIS-GRÜSSE & ERINNERUNGEN (Marketing)
+   ══════════════════════════════════════════════════════════ */
+
+// Gruß erzeugen + optional sofort per E-Mail verschicken
+app.post('/api/greetings', async (req, res) => {
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
+  if (!rateLimit(ip, 'greeting', 5)) {
+    return res.status(429).json({ error: 'Zu viele Grüße — bitte später erneut versuchen.' });
+  }
+  try {
+    const { imageDataUrl, occasion, senderName, recipientEmail, message } = req.body || {};
+    const { id } = storeGreeting({ imageDataUrl, occasion, senderName });
+    if (recipientEmail) {
+      await sendGreetingNow({ greetingId: id, recipientEmail, message });
+    }
+    res.json({ greetingId: id, sent: !!recipientEmail });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Erinnerung anlegen (Double-Opt-In-Mail geht sofort raus)
+app.post('/api/reminders', async (req, res) => {
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
+  if (!rateLimit(ip, 'reminder', 5)) {
+    return res.status(429).json({ error: 'Zu viele Anfragen — bitte später erneut versuchen.' });
+  }
+  try {
+    const { email, occasion, month, day, greetingId, consent } = req.body || {};
+    if (!consent) {
+      return res.status(400).json({ error: 'Bitte der E-Mail-Erinnerung zustimmen (DSGVO).' });
+    }
+    const { id } = await createReminder({ email, occasion, month, day, greetingId });
+    res.json({ reminderId: id, confirmationRequired: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+const tinyPage = (title, text) => `<!DOCTYPE html><html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} – Dots for Love</title>
+<style>body{font-family:Helvetica,Arial,sans-serif;background:#F9F8F5;color:#1A1A2E;display:grid;place-items:center;min-height:100vh;margin:0}
+.card{background:#fff;border-radius:16px;padding:40px;max-width:420px;text-align:center;box-shadow:0 2px 12px rgba(26,26,46,.08)}
+a{color:#E8495A}</style></head><body><div class="card"><h1 style="font-size:22px">${title}</h1><p>${text}</p></div></body></html>`;
+
+app.get('/api/reminders/confirm/:token', (req, res) => {
+  const ok = confirmReminder(req.params.token);
+  res.status(ok ? 200 : 404).send(ok
+    ? tinyPage('Erinnerung aktiviert 🎉', 'Wir melden uns 3 Wochen vor dem großen Tag mit deinem Rabatt — und am Tag selbst mit deinem Gratisbild.')
+    : tinyPage('Link ungültig', 'Diese Bestätigung ist nicht (mehr) gültig.'));
+});
+
+app.get('/api/reminders/unsubscribe/:token', (req, res) => {
+  const ok = deleteReminderByToken(req.params.token);
+  res.status(ok ? 200 : 404).send(ok
+    ? tinyPage('Abbestellt', 'Deine Erinnerung wurde gelöscht. Schade — du bist jederzeit wieder willkommen!')
+    : tinyPage('Link ungültig', 'Diese Erinnerung existiert nicht (mehr).'));
+});
+
+/* ══════════════════════════════════════════════════════════
+   6. NACHGEREICHTE DESIGNS (z.B. Etsy) & STATUS
    ══════════════════════════════════════════════════════════ */
 app.post('/api/jobs/:id/attach-design', agentAuth, async (req, res) => {
   const job = getJob(req.params.id);
@@ -209,4 +274,5 @@ app.listen(config.port, () => {
   console.log(`Heimdruck: ${config.homePrint.enabled ? 'aktiv' : 'aus'} ` +
     `(Schwelle ${config.homePrint.monthlyRevenueThreshold} €, Größen: ${config.homePrint.sizes.join(', ')})`);
   startEtsyPolling();
+  startReminderScheduler();
 });

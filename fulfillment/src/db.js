@@ -49,6 +49,29 @@ CREATE TABLE IF NOT EXISTS etsy_receipts (
   processed_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS greetings (
+  id          TEXT PRIMARY KEY,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  occasion    TEXT NOT NULL,               -- birthday | anniversary
+  png_path    TEXT NOT NULL,
+  sender_name TEXT DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS reminders (
+  id             TEXT PRIMARY KEY,
+  created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  email          TEXT NOT NULL,
+  occasion       TEXT NOT NULL,            -- birthday | anniversary
+  month          INTEGER NOT NULL,         -- 1-12
+  day            INTEGER NOT NULL,         -- 1-31
+  greeting_id    TEXT,                     -- optionales Gratisbild
+  confirm_token  TEXT NOT NULL,
+  confirmed      INTEGER NOT NULL DEFAULT 0,   -- Double-Opt-In (DSGVO)
+  offer_sent_year INTEGER,                 -- letztes Jahr, in dem die 3-Wochen-Mail ging
+  day_sent_year   INTEGER                  -- letztes Jahr, in dem die Tages-Mail ging
+);
+CREATE INDEX IF NOT EXISTS idx_reminders_date ON reminders (month, day);
+
 CREATE INDEX IF NOT EXISTS idx_jobs_route_status ON jobs (route, status);
 CREATE INDEX IF NOT EXISTS idx_orders_created ON orders (created_at);
 `);
@@ -131,4 +154,55 @@ export function isEtsyReceiptProcessed(receiptId) {
 
 export function markEtsyReceiptProcessed(receiptId) {
   db.prepare(`INSERT OR IGNORE INTO etsy_receipts (receipt_id) VALUES (?)`).run(String(receiptId));
+}
+
+/* ── Gratis-Grüße & Erinnerungen (Marketing) ─────────────── */
+
+export function insertGreeting(g) {
+  db.prepare(`INSERT INTO greetings (id, occasion, png_path, sender_name)
+              VALUES (@id, @occasion, @png_path, @sender_name)`).run(g);
+}
+
+export function getGreeting(id) {
+  return db.prepare(`SELECT * FROM greetings WHERE id = ?`).get(id);
+}
+
+export function insertReminder(r) {
+  db.prepare(`
+    INSERT INTO reminders (id, email, occasion, month, day, greeting_id, confirm_token)
+    VALUES (@id, @email, @occasion, @month, @day, @greeting_id, @confirm_token)
+  `).run(r);
+}
+
+export function confirmReminder(token) {
+  const info = db.prepare(`UPDATE reminders SET confirmed = 1 WHERE confirm_token = ?`).run(token);
+  return info.changes > 0;
+}
+
+export function deleteReminderByToken(token) {
+  const info = db.prepare(`DELETE FROM reminders WHERE confirm_token = ?`).run(token);
+  return info.changes > 0;
+}
+
+const SENT_COLUMNS = new Set(['offer_sent_year', 'day_sent_year']);
+function assertSentColumn(col) {
+  if (!SENT_COLUMNS.has(col)) throw new Error(`Ungültige Spalte: ${col}`);
+}
+
+/** Bestätigte Erinnerungen, deren Termin (Monat/Tag) genau `date` ist. */
+export function remindersOnDate(date, sentColumn) {
+  assertSentColumn(sentColumn);
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const year = date.getFullYear();
+  return db.prepare(`
+    SELECT * FROM reminders
+    WHERE confirmed = 1 AND month = ? AND day = ?
+      AND (${sentColumn} IS NULL OR ${sentColumn} < ?)
+  `).all(month, day, year);
+}
+
+export function markReminderSent(id, sentColumn, year) {
+  assertSentColumn(sentColumn);
+  db.prepare(`UPDATE reminders SET ${sentColumn} = ? WHERE id = ?`).run(year, id);
 }

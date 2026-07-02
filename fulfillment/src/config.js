@@ -50,6 +50,24 @@ export const config = {
   },
 
   notifyWebhookUrl: process.env.NOTIFY_WEBHOOK_URL || '',
+
+  /** Öffentliche Shop-URL für Links in Marketing-E-Mails */
+  shopUrl: (process.env.SHOP_PUBLIC_URL || 'https://dotsforlove.myshopify.com').replace(/\/$/, ''),
+
+  smtp: {
+    host: process.env.SMTP_HOST || '',
+    port: parseInt(process.env.SMTP_PORT || '587', 10),
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    from: process.env.MAIL_FROM || 'Dots for Love <hallo@dots-for-love.com>',
+  },
+
+  marketing: {
+    discountCode: process.env.DISCOUNT_CODE || 'ERINNERUNG5',
+    discountPercent: parseInt(process.env.DISCOUNT_PERCENT || '5', 10),
+    /** Vorlauf der Erinnerungs-Mail in Tagen (Standard: 3 Wochen) */
+    offerLeadDays: parseInt(process.env.OFFER_LEAD_DAYS || '21', 10),
+  },
 };
 
 /** SKU ↔ Größe Zuordnung (identisch in Shopify & Etsy pflegen) */
