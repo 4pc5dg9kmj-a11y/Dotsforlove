@@ -276,8 +276,12 @@
           <div class="config-group">
             <label class="config-label">Posterformat</label>
             <div class="size-selector" role="radiogroup" aria-label="Posterformat wählen">
-              {%- assign sizes = 'A4,A3,A2,30x40,50x70,70x100' | split: ',' -%}
-              {%- assign size_dims = '21×29,7 cm,29,7×42 cm,42×59,4 cm,30×40 cm,50×70 cm,70×100 cm' | split: ',' -%}
+              {%- comment -%}
+                Nur Größen anbieten, die es als Shopify-Variante gibt.
+                Trennung per Semikolon, da die Maße Kommas enthalten.
+              {%- endcomment -%}
+              {%- assign sizes = 'A4;A3;50x70;70x100' | split: ';' -%}
+              {%- assign size_dims = '21×29,7 cm;29,7×42 cm;50×70 cm;70×100 cm' | split: ';' -%}
               {%- for size in sizes -%}
                 <button class="size-opt{% if size == section.settings.default_size %} active{% endif %}"
                         data-size="{{ size }}"
@@ -392,7 +396,7 @@
             <span class="price-label">Preis</span>
             <span class="price-value" id="purchasePrice">
               {% comment %} Price set dynamically by JS {% endcomment %}
-              29,90 €
+              49,00 €
             </span>
           </div>
         </div>
@@ -461,8 +465,6 @@
       "options": [
         { "value": "A4",    "label": "DIN A4 (21×29,7 cm)" },
         { "value": "A3",    "label": "DIN A3 (29,7×42 cm)" },
-        { "value": "A2",    "label": "DIN A2 (42×59,4 cm)" },
-        { "value": "30x40", "label": "30×40 cm" },
         { "value": "50x70", "label": "50×70 cm" },
         { "value": "70x100","label": "70×100 cm" }
       ],

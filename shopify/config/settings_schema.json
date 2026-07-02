@@ -81,12 +81,14 @@
         "type": "text",
         "id": "variant_id_a4",
         "label": "Varianten-ID für DIN A4",
-        "info": "Shopify Produkt-Varianten-ID (Zahlen)"
+        "info": "Shopify Produkt-Varianten-ID (Zahlen)",
+        "default": "62388082377034"
       },
       {
         "type": "text",
         "id": "variant_id_a3",
-        "label": "Varianten-ID für DIN A3"
+        "label": "Varianten-ID für DIN A3",
+        "default": "62388082409802"
       },
       {
         "type": "text",
@@ -106,12 +108,29 @@
       {
         "type": "text",
         "id": "variant_id_50x70",
-        "label": "Varianten-ID für 50×70 cm"
+        "label": "Varianten-ID für 50×70 cm",
+        "default": "62388082442570"
       },
       {
         "type": "text",
         "id": "variant_id_70x100",
-        "label": "Varianten-ID für 70×100 cm"
+        "label": "Varianten-ID für 70×100 cm",
+        "default": "62388082475338"
+      }
+    ]
+  },
+  {
+    "name": "Fulfillment-Automatisierung",
+    "settings": [
+      {
+        "type": "paragraph",
+        "content": "URL des Fulfillment-Hubs (siehe AUTOMATISIERUNG.md). Der Hub speichert die Kundendesigns und steuert vollautomatisch Gelato-Druck, Etsy-Bestellungen und den Heimdruck von A4/A3 ab der Umsatzschwelle."
+      },
+      {
+        "type": "text",
+        "id": "fulfillment_hub_url",
+        "label": "Fulfillment-Hub URL",
+        "info": "z.B. https://fulfillment.dots-for-love.com — leer lassen, solange der Hub nicht deployed ist"
       }
     ]
   },
@@ -126,13 +145,13 @@
         "type": "text",
         "id": "price_a4",
         "label": "Preis DIN A4 (Anzeige)",
-        "default": "19.90"
+        "default": "34.00"
       },
       {
         "type": "text",
         "id": "price_a3",
         "label": "Preis DIN A3 (Anzeige)",
-        "default": "29.90"
+        "default": "49.00"
       },
       {
         "type": "text",
@@ -156,13 +175,13 @@
         "type": "text",
         "id": "price_50x70",
         "label": "Preis 50×70 (Anzeige)",
-        "default": "54.90"
+        "default": "64.00"
       },
       {
         "type": "text",
         "id": "price_70x100",
         "label": "Preis 70×100 (Anzeige)",
-        "default": "79.90"
+        "default": "84.00"
       }
     ]
   },

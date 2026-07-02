@@ -612,30 +612,58 @@ function initConfigurator() {
  *     sends the final SVG to the customer's email.
  */
 async function addShopifyToCart(gen) {
-  // Map poster sizes to Shopify variant IDs (set in settings_schema.json)
-  const VARIANT_IDS = window.DotsForLoveVariants || {
-    'A4':    '{{ settings.variant_id_a4    }}',
-    'A3':    '{{ settings.variant_id_a3    }}',
-    'A2':    '{{ settings.variant_id_a2    }}',
-    'A1':    '{{ settings.variant_id_a1    }}',
-    '30x40': '{{ settings.variant_id_30x40 }}',
-    '50x70': '{{ settings.variant_id_50x70 }}',
-    '70x100':'{{ settings.variant_id_70x100}}',
+  // Map poster sizes to Shopify variant IDs.
+  // Primär aus dem Theme (theme.liquid injiziert window.DotsForLoveVariants),
+  // Fallback: die echten Varianten-IDs des Stores dotsforlove.myshopify.com.
+  const FALLBACK_VARIANT_IDS = {
+    'A4':     '62388082377034',
+    'A3':     '62388082409802',
+    '50x70':  '62388082442570',
+    '70x100': '62388082475338',
   };
+  const themeIds = window.DotsForLoveVariants || {};
+  const variantId = themeIds[gen.options.posterSize] || FALLBACK_VARIANT_IDS[gen.options.posterSize];
 
-  const variantId = VARIANT_IDS[gen.options.posterSize];
+  if (!variantId) {
+    throw new Error(
+      `Für die Größe ${gen.options.posterSize} ist kein Shopify-Produkt hinterlegt. ` +
+      'Bitte eine andere Größe wählen.'
+    );
+  }
 
   // Prepare line item properties
   const props = gen.getShopifyLineItemProperties();
 
-  // Truncate SVG for line item property (max 255 chars per Shopify limits)
-  // The full SVG should be stored in a metafield or note attachment server-side
-  const svgPreview = btoa(gen._lastSVG ? gen._lastSVG.substring(0, 200) : '').substring(0, 255);
-  props['_svg_token'] = svgPreview;
+  // Finales SVG an den Fulfillment-Hub hochladen und die Design-ID
+  // in der Bestellung speichern — damit kann die Bestellung später
+  // vollautomatisch gedruckt werden (Gelato oder Heimdruck).
+  const hubUrl = (window.DotsForLoveFulfillmentUrl || '').replace(/\/$/, '');
+  if (hubUrl && gen._lastSVG) {
+    const uploadRes = await fetch(hubUrl + '/api/designs', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        svg:  gen._lastSVG,
+        meta: {
+          size:        gen.options.posterSize,
+          orientation: gen.options.orientation,
+          shape:       gen.options.shape,
+          numDots:     gen.options.numDots,
+        },
+      }),
+    });
+    if (!uploadRes.ok) {
+      throw new Error('Design-Upload fehlgeschlagen — bitte erneut versuchen.');
+    }
+    const { designId } = await uploadRes.json();
+    props['_design_id'] = designId;
+  } else if (!hubUrl) {
+    console.warn('DotsForLoveFulfillmentUrl nicht gesetzt — Bestellung ohne Design-ID (kein Auto-Fulfillment möglich).');
+  }
 
   const cartData = {
     items: [{
-      id:         variantId || 42000000000000, // fallback for development
+      id:         variantId,
       quantity:   1,
       properties: props,
     }],

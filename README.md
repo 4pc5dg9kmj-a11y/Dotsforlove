@@ -24,8 +24,12 @@ Dotsforlove/
     ├── templates/
     │   ├── index.liquid          ← Homepage-Template
     │   └── page.poster-gestalten.liquid ← Konfigurator-Seite
-    └── config/
-        └── settings_schema.json  ← Theme-Einstellungen
+    ├── config/
+    │   └── settings_schema.json  ← Theme-Einstellungen
+    └── ...
+├── fulfillment/                  ← Fulfillment-Hub (Auto-Druck: Gelato/Etsy/Heimdruck)
+│   └── src/                      ← siehe AUTOMATISIERUNG.md
+└── print-agent/                  ← Heimdruck-Agent für PC/Raspberry Pi
 ```
 
 ---
@@ -95,22 +99,25 @@ Gehe in Shopify Admin → **Online-Shop → Themes → Einstellungen anpassen** 
 3. Handle: `poster-gestalten`
 4. Template: `page.poster-gestalten`
 
-### 6. Fulfillment-App (empfohlen)
+### 6. Vollautomatisches Fulfillment ✨
 
-Nach dem Kauf müssen Kunden ihre SVG-Datei erhalten. Dafür wird eine **Shopify Private App** oder **Custom App** benötigt:
+Das Fulfillment ist fertig implementiert — siehe **[AUTOMATISIERUNG.md](AUTOMATISIERUNG.md)**:
 
 ```
-Workflow:
-1. Kunde kauft → Order-Webhook ausgelöst
-2. App liest Bestellpositionen (line_item.properties)
-3. App generiert SVG serverseitig mit den gespeicherten Einstellungen
-4. SVG per E-Mail an Kunden senden (oder Download-Link)
+fulfillment/     ← Fulfillment-Hub (Node.js-Server)
+                    • nimmt Kundendesigns vom Konfigurator entgegen
+                    • Shopify-Webhook orders/paid
+                    • rendert 300-DPI-Druckdateien aus dem SVG
+                    • Gelato-API: automatischer Druck + Versand weltweit
+                    • Etsy-Connector: Bestellungen automatisch abholen
+                    • Umsatz-Routing: A4/A3 ab Monatsumsatz-Schwelle → Heimdruck
+
+print-agent/     ← Heimdruck-Agent (läuft zuhause am Drucker)
+                    • holt Jobs vom Hub, druckt via CUPS (A4/A3)
+                    • markiert Shopify-Bestellungen automatisch als erfüllt
 ```
 
-**Empfohlene Tools:**
-- [Shopify Webhooks](https://shopify.dev/docs/api/admin-rest/webhooks) (Order Events)
-- [Transactional E-Mail](https://shopify.dev/docs/apps/build/email/build-email-app) (Klaviyo / Shopify Email)
-- Node.js / Python Server für SVG-Generierung mit gleicher Logik wie `configurator.js`
+**Ablauf:** Kunde gestaltet Poster → finales SVG wird beim „In den Warenkorb" zum Hub hochgeladen (`_design_id` in der Bestellung) → Bestellung bezahlt → Hub entscheidet automatisch: Gelato oder dein Drucker zuhause.
 
 ---
 

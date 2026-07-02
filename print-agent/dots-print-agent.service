@@ -1,0 +1,28 @@
+# Systemd-Service für den Heimdruck-Agent (Raspberry Pi / Linux-PC)
+#
+# Installation:
+#   1. Datei anpassen (Pfade, Umgebungsvariablen)
+#   2. sudo cp dots-print-agent.service /etc/systemd/system/
+#   3. sudo systemctl daemon-reload
+#   4. sudo systemctl enable --now dots-print-agent
+#   Logs: journalctl -u dots-print-agent -f
+
+[Unit]
+Description=Dots for Love Heimdruck-Agent
+After=network-online.target cups.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/dots-print-agent
+Environment=HUB_URL=https://fulfillment.example.com
+Environment=AGENT_TOKEN=bitte-token-eintragen
+Environment=PRINTER_NAME=Mein_Drucker
+Environment=POLL_SECONDS=60
+ExecStart=/usr/bin/node agent.js
+Restart=always
+RestartSec=15
+
+[Install]
+WantedBy=multi-user.target

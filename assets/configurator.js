@@ -26,15 +26,15 @@ class DotPatternGenerator {
       '70x100':{ w: 700,  h: 1000 },
     };
 
-    /** Prices per size in EUR */
+    /** Prices per size in EUR — muss zu den Shopify-Variantenpreisen passen */
     this.PRICES = {
-      'A4':    19.90,
-      'A3':    29.90,
-      'A2':    44.90,
-      'A1':    69.90,
-      '30x40': 34.90,
-      '50x70': 54.90,
-      '70x100':79.90,
+      'A4':    34.00,
+      'A3':    49.00,
+      'A2':    59.00,
+      'A1':    79.00,
+      '30x40': 44.00,
+      '50x70': 64.00,
+      '70x100':84.00,
     };
 
     this.options = {
@@ -537,7 +537,8 @@ class DotPatternGenerator {
       'Hintergrund':      this.options.bgColor,
       'Punkte (gesamt)':  String(grid.totalDots),
       'Raster':           `${grid.cols} × ${grid.rows}`,
-      '_svgData':         'generated_on_order', // full SVG sent server-side
+      // '_design_id' wird in addShopifyToCart() ergänzt, nachdem das
+      // finale SVG zum Fulfillment-Hub hochgeladen wurde.
     };
   }
 

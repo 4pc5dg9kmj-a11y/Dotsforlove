@@ -1,0 +1,13 @@
+{
+  "name": "dots-for-love-print-agent",
+  "version": "1.0.0",
+  "description": "Heimdruck-Agent: druckt A4/A3-Bestellungen automatisch auf dem lokalen Drucker (CUPS)",
+  "type": "module",
+  "main": "agent.js",
+  "scripts": {
+    "start": "node agent.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

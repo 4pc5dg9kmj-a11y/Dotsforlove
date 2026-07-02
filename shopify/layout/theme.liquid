@@ -51,6 +51,9 @@
       '50x70': '{{ settings.variant_id_50x70 }}',
       '70x100':'{{ settings.variant_id_70x100 }}',
     };
+    // Fulfillment-Hub: nimmt das finale SVG entgegen und steuert
+    // Gelato-/Heimdruck-Fulfillment vollautomatisch (siehe AUTOMATISIERUNG.md)
+    window.DotsForLoveFulfillmentUrl = '{{ settings.fulfillment_hub_url }}';
     window.ShopCurrency = '{{ cart.currency.iso_code }}';
     window.ShopLocale   = '{{ request.locale.iso_code }}';
   </script>
