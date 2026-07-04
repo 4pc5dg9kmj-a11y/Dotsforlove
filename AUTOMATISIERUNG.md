@@ -139,7 +139,21 @@ Zwei kostenlose virale Features auf der Seite **„Gratis-Gruß"** (`gratis.html
 4. Shopify-Seite anlegen: Titel „Gratis-Gruß", Handle `gratis-gruss`, Template `page.gratis-gruss`. Die Datei `assets/greeting.js` als `greeting.js` in die Theme-Assets kopieren.
 5. Spam-Schutz ist eingebaut (max. 5 Grüße/Erinnerungen pro Stunde und IP).
 
-## 8. Status prüfen
+## 8. Familien-Poster 👨‍👩‍👧‍👦
+
+Fünf freigegebene Motive auf der Seite **„Familien-Poster"** (`familie.html` bzw. Shopify-Template `page.familien-poster`): Smiley-Grid (ein Gesicht pro Mitglied), Geburtsjahre in Serifenziffern, Namensrätsel in zwei Stilen (modern / Pinsel mit eingekreisten Namen), Pinselfiguren nach Alter.
+
+- Läuft über **dieselbe Pipeline** wie der Foto-Konfigurator: Live-Vorschau mit Wasserzeichen → Druck-SVG beim Warenkorb-Klick zum Hub (`_design_id`) → Gelato/Heimdruck automatisch. Gleiche Produkte, gleiche Preise.
+- **Einrichtung:** `assets/family.js` als `family.js` in die Theme-Assets kopieren; Shopify-Seite „Familien-Poster" mit Handle `familien-poster` und Template `page.familien-poster` anlegen.
+- **Schrift für den Druck:** Die Handschrift-Motive (Rätsel-Pinsel, Figuren) nutzen die frei lizenzierte Schrift **Caveat**. Damit der Hub sie beim Rendern kennt, auf dem Hub-Server einmalig installieren:
+  ```bash
+  mkdir -p ~/.fonts && cd ~/.fonts
+  curl -LO https://github.com/google/fonts/raw/main/ofl/caveat/Caveat%5Bwght%5D.ttf
+  fc-cache -f
+  ```
+  Ohne Caveat fällt das Rendering auf eine System-Schreibschrift zurück — funktioniert, sieht aber weniger charmant aus.
+
+## 9. Status prüfen
 
 ```
 GET https://DEIN-HUB/api/status

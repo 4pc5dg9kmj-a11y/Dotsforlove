@@ -1,0 +1,147 @@
+{% comment %}
+  Dots for Love – Familien-Poster-Konfigurator
+  =============================================
+  Fünf freigegebene Motive (Smiley-Grid, Jahreszahlen, Namensrätsel
+  modern/pinsel, Figuren nach Alter). Live-Vorschau mit Wasserzeichen,
+  Druck-SVG wird beim Warenkorb-Klick zum Fulfillment-Hub hochgeladen
+  (_design_id) — Gelato/Heimdruck läuft automatisch wie beim
+  Foto-Konfigurator.
+
+  Benötigt: family.js in /assets/, Varianten-IDs + Hub-URL in den
+  Theme-Einstellungen (injiziert via theme.liquid).
+{% endcomment %}
+
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+  .fam-main { max-width: 1180px; margin: 0 auto; padding: 40px 24px 64px; }
+  .fam-head { text-align: center; max-width: 640px; margin: 0 auto 36px; }
+  .fam-head h1 { font-family: var(--font-heading, Georgia); font-size: clamp(1.9rem,4vw,2.7rem); margin: 0 0 10px; }
+  .fam-head h1 em { color: #E8495A; }
+  .fam-head p { color: #666; margin: 0; }
+  .fam-grid { display: grid; grid-template-columns: 400px 1fr; gap: 40px; align-items: start; }
+  @media (max-width: 900px) { .fam-grid { grid-template-columns: 1fr; } }
+  .fam-panel { background: #fff; border-radius: 20px; padding: 26px; box-shadow: 0 2px 16px rgba(26,26,46,.07); }
+  .fam-step { font-size: .75rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #999; margin: 22px 0 10px; }
+  .fam-step:first-child { margin-top: 0; }
+  .fam-panel input[type=text], .fam-panel input[type=date] {
+    width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid #E5E2DC;
+    border-radius: 10px; font-family: inherit; font-size: .9rem; }
+  .fam-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .fam-members { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+  .fam-member { display: grid; grid-template-columns: 1fr 150px 26px; gap: 8px; align-items: center; }
+  .fam-rm { background: none; border: none; color: #999; font-size: 17px; cursor: pointer; }
+  .fam-rm:hover { color: #E8495A; }
+  .fam-add { margin-top: 10px; background: none; border: 1.5px dashed #E5E2DC; color: #999;
+    border-radius: 999px; padding: 8px 16px; font-family: inherit; font-size: .85rem; font-weight: 600; cursor: pointer; }
+  .fam-add:hover { border-color: #E8495A; color: #E8495A; }
+  .fam-variants { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .fam-variant { padding: 12px 10px; border: 2px solid #E5E2DC; border-radius: 12px; background: #fff;
+    font-family: inherit; font-size: .84rem; font-weight: 600; cursor: pointer; text-align: left; line-height: 1.35; transition: .2s; }
+  .fam-variant small { display: block; font-weight: 400; color: #999; font-size: .74rem; }
+  .fam-variant.active, .fam-variant:hover { border-color: #E8495A; color: #E8495A; background: #FDF0F1; }
+  .fam-color-row { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
+  .fam-color-row input[type=color] { width: 42px; height: 34px; border: 1.5px solid #E5E2DC; border-radius: 8px; padding: 2px; cursor: pointer; }
+  .fam-color-row span { font-size: .85rem; color: #666; }
+  .fam-sizes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .fam-size { padding: 10px 6px; border: 2px solid #E5E2DC; border-radius: 10px; background: #fff;
+    font-family: inherit; font-size: .84rem; font-weight: 700; cursor: pointer; transition: .2s; }
+  .fam-size small { display: block; font-weight: 400; color: #999; font-size: .7rem; }
+  .fam-size.active, .fam-size:hover { border-color: #E8495A; color: #E8495A; background: #FDF0F1; }
+  .fam-preview-wrap { position: sticky; top: 96px; }
+  .fam-frame { background: #fff; border-radius: 4px; box-shadow: 0 20px 60px rgba(26,26,46,.22); overflow: hidden; line-height: 0; }
+  .fam-frame canvas { width: 100%; height: auto; }
+  .fam-note { font-size: .78rem; color: #999; margin-top: 12px; text-align: center; }
+  .fam-buy { display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    background: #fff; border-radius: 14px; padding: 16px 20px; margin-top: 18px; box-shadow: 0 2px 12px rgba(26,26,46,.07); flex-wrap: wrap; }
+  .fam-buy .price { font-family: var(--font-heading, Georgia); font-size: 1.7rem; }
+  .fam-buy .sub { display: block; font-size: .74rem; color: #999; }
+</style>
+
+<main class="fam-main">
+  <div class="fam-head">
+    <h1>{{ section.settings.title | default: 'Eure Familie als' }} <em>{{ section.settings.title_em | default: 'Kunstwerk' }}</em></h1>
+    <p>{{ section.settings.subtitle | default: 'Vier Motive, live aus euren Namen und Geburtsdaten komponiert — als Poster in Galerie-Qualität.' }}</p>
+  </div>
+
+  <div class="fam-grid">
+    <div class="fam-panel">
+      <div class="fam-step">1 · Eure Familie</div>
+      <div class="fam-two">
+        <input type="text" id="famName" value="Weber" placeholder="Familienname" aria-label="Familienname" />
+        <input type="text" id="famCity" value="" placeholder="Ort (optional)" aria-label="Ort" />
+      </div>
+      <div class="fam-members" id="famMembers"></div>
+      <button type="button" class="fam-add" id="famAdd">+ Mitglied hinzufügen (max. 8)</button>
+
+      <div class="fam-step">2 · Motiv</div>
+      <div class="fam-variants">
+        <button type="button" class="fam-variant active" data-variant="smiley">🙂 Smiley-Grid<small>Ein Gesicht pro Mitglied</small></button>
+        <button type="button" class="fam-variant" data-variant="jahre">1989 Jahreszahlen<small>Geburtsjahre + Namen</small></button>
+        <button type="button" class="fam-variant" data-variant="raetsel-modern">🔤 Rätsel · Modern<small>Namen dunkel abgesetzt</small></button>
+        <button type="button" class="fam-variant" data-variant="raetsel-pinsel">✏️ Rätsel · Pinsel<small>Namen farbig eingekreist</small></button>
+        <button type="button" class="fam-variant" data-variant="figuren">👥 Figuren<small>Größe nach Alter</small></button>
+      </div>
+
+      <div class="fam-color-row" id="accentRowSmiley">
+        <input type="color" id="famAccent" value="#2B3FCB" aria-label="Smiley-Farbe" />
+        <span>Farbe der Gesichter &amp; Schrift</span>
+      </div>
+      <div class="fam-color-row" id="accentRowFiguren" hidden>
+        <input type="color" id="famAccent2" value="#141414" aria-label="Figuren-Farbe" />
+        <span>Farbe der Figuren</span>
+      </div>
+
+      <div class="fam-step">3 · Format</div>
+      <div class="fam-sizes">
+        <button type="button" class="fam-size" data-size="A4">A4<small>21×29,7</small></button>
+        <button type="button" class="fam-size active" data-size="A3">A3<small>29,7×42</small></button>
+        <button type="button" class="fam-size" data-size="50x70">50×70<small>cm</small></button>
+        <button type="button" class="fam-size" data-size="70x100">70×100<small>cm</small></button>
+      </div>
+    </div>
+
+    <div class="fam-preview-wrap">
+      <div class="fam-frame"><canvas id="familyCanvas" width="900" height="1273" aria-label="Poster-Vorschau"></canvas></div>
+      <p class="fam-note">Live-Vorschau mit Wasserzeichen · das gedruckte Poster kommt ohne</p>
+      <div class="fam-buy">
+        <div>
+          <span class="price" id="familyPrice">{{ settings.price_a3 }} €</span>
+          <span class="sub">inkl. MwSt., zzgl. Versand · Druck &amp; Versand automatisch</span>
+        </div>
+        <button class="btn btn-primary" id="famAddToCart">In den Warenkorb 🛒</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+{{ 'family.js' | asset_url | script_tag }}
+
+{% schema %}
+{
+  "name": "Familien-Poster",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Titel",
+      "default": "Eure Familie als"
+    },
+    {
+      "type": "text",
+      "id": "title_em",
+      "label": "Titel (Akzentwort)",
+      "default": "Kunstwerk"
+    },
+    {
+      "type": "textarea",
+      "id": "subtitle",
+      "label": "Untertitel",
+      "default": "Vier Motive, live aus euren Namen und Geburtsdaten komponiert — als Poster in Galerie-Qualität."
+    }
+  ],
+  "presets": [
+    { "name": "Familien-Poster" }
+  ]
+}
+{% endschema %}
