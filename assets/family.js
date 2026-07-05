@@ -372,22 +372,27 @@
     const rows = Math.max(13, clean.length * 3 + 3);
     const grid = Array.from({ length: rows }, () => Array(cols).fill(null));
     const placements = [];
+    let wi = 0;
     for (const word of clean) {
+      // Richtungen mischen: reihum waagerecht / senkrecht / schräg nach
+      // unten (wie im Referenzposter), damit jedes Poster alle drei zeigt
+      const preferred = ['h', 'v', 'd'][wi++ % 3];
       for (let tries = 0; tries < 500; tries++) {
-        const horiz = rnd() < 0.5;
-        const maxR = horiz ? rows : rows - word.length;
-        const maxC = horiz ? cols - word.length : cols;
+        const dir = tries < 200 ? preferred
+          : (rnd() < 0.4 ? 'h' : rnd() < 0.6 ? 'v' : 'd');
+        const maxR = dir === 'h' ? rows : rows - word.length;
+        const maxC = dir === 'v' ? cols : cols - word.length;
         if (maxR <= 0 || maxC <= 0) continue;
         const r0 = Math.floor(rnd() * maxR), c0 = Math.floor(rnd() * maxC);
         let ok = true;
         for (let k = 0; k < word.length; k++) {
-          const r = horiz ? r0 : r0 + k, c = horiz ? c0 + k : c0;
+          const r = r0 + (dir === 'h' ? 0 : k), c = c0 + (dir === 'v' ? 0 : k);
           if (grid[r][c] !== null && grid[r][c] !== word[k]) { ok = false; break; }
         }
         if (!ok) continue;
         const cells = [];
         for (let k = 0; k < word.length; k++) {
-          const r = horiz ? r0 : r0 + k, c = horiz ? c0 + k : c0;
+          const r = r0 + (dir === 'h' ? 0 : k), c = c0 + (dir === 'v' ? 0 : k);
           grid[r][c] = word[k]; cells.push([r, c]);
         }
         placements.push({ word, cells });
@@ -401,11 +406,17 @@
     return { grid, placements, rows, cols };
   }
 
-  /* ══ Painter · raetsel (modern | pinsel) ══ */
-  function paintRaetsel(s, fam, style) {
+  /* ══ Painter · raetsel (modern | pinsel) ══
+     modern: wie das Referenzposter — helle Buchstaben, Namen dunkel/fett.
+     pinsel: ALLES einheitlich in EINER Wahlfarbe als Zeichnungseffekt —
+             Handschrift-Buchstaben mit leichtem Kippeln, Namen mit
+             handgemalter Linie eingekreist, Fußzeile in derselben Farbe. */
+  function paintRaetsel(s, fam, style, opts) {
     const W = s.W, H = s.H, M = W * 0.097;
     s.rect(0, 0, W, H, '#FFFFFF');
     const { grid, placements, rows, cols } = buildPuzzle(fam.members.map((m) => m.name), fam.name);
+    const ACC = (opts && opts.accent3) || '#E8495A';
+    const inkMain = style === 'pinsel' ? ACC : '#1A1A1A';
 
     const areaH = H - 2 * M - H * 0.12;
     const cell = Math.min((W - 2 * M) / cols, areaH / rows);
@@ -413,13 +424,14 @@
     const inWord = new Set();
     placements.forEach((p) => p.cells.forEach(([r, c]) => inWord.add(r + ':' + c)));
 
-    // Referenztreue: kleine, leichte Buchstaben mit viel Luft im Raster;
-    // Namen deutlich schwerer und dunkler abgesetzt
+    const rndL = rng('letters:' + fam.name + style);
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const hit = inWord.has(r + ':' + c);
         const o = style === 'pinsel'
-          ? { size: cell * 0.5, family: FONTS.hand, style: 'italic', fill: '#2A2A2A' }
+          // Zeichnungseffekt: eine Farbe, Handschrift, jedes Zeichen kippelt leicht
+          ? { size: cell * 0.5, family: FONTS.hand, style: 'italic', fill: ACC,
+              rotate: (rndL() - 0.5) * 0.16 }
           : { size: cell * 0.42, family: FONTS.sans, weight: hit ? 700 : 300, fill: hit ? '#111111' : '#BFBFBF' };
         s.text(grid[r][c], gx + (c + 0.5) * cell, gy + (r + 0.5) * cell + o.size * 0.35,
           { ...o, align: 'center' });
@@ -445,20 +457,32 @@
             pts.push([mx + Math.cos(ang) * px0 - Math.sin(ang) * py0,
                       my + Math.sin(ang) * px0 + Math.cos(ang) * py0]);
           }
-          s.polyline(pts, { stroke: NAME_PALETTE[pi % NAME_PALETTE.length], lw: (3.4 - pass) * cell / 16, close: true });
+          s.polyline(pts, { stroke: ACC, lw: (3.4 - pass) * cell / 16, close: true });
         }
       });
     }
 
     const fy = H - M - H * 0.055;
-    s.polyline([[W / 2 - W * 0.118, fy], [W / 2 + W * 0.118, fy]], { stroke: '#1A1A1A', lw: cell / 14 });
-    const fn = ('Familie ' + fam.name).toUpperCase();
-    const fs = fitSize(fn, W * 0.03, FONTS.sans, 700, 'normal', (W - 2 * M) * 0.8);
-    spacedText(s, fn, W / 2, fy + W * 0.045,
-      { size: fs, family: FONTS.sans, weight: 700, fill: '#1A1A1A' }, fs * 0.12, 'center');
-    if (fam.city) {
-      spacedText(s, fam.city.toUpperCase(), W / 2, fy + W * 0.073,
-        { size: W * 0.015, family: FONTS.sans, weight: 500, fill: '#A6A6A6' }, W * 0.0025, 'center');
+    s.polyline([[W / 2 - W * 0.118, fy], [W / 2 + W * 0.118, fy]], { stroke: inkMain, lw: cell / 14 });
+    if (style === 'pinsel') {
+      // Fußzeile handschriftlich, gleiche Farbe (einheitlicher Zeichnungslook)
+      const fn = 'Familie ' + fam.name;
+      const fs = fitSize(fn, W * 0.038, FONTS.hand, 600, 'italic', (W - 2 * M) * 0.8);
+      s.text(fn, W / 2, fy + W * 0.048,
+        { size: fs, family: FONTS.hand, weight: 600, style: 'italic', fill: ACC, align: 'center' });
+      if (fam.city) {
+        s.text(fam.city, W / 2, fy + W * 0.078,
+          { size: W * 0.02, family: FONTS.hand, style: 'italic', fill: ACC, align: 'center' });
+      }
+    } else {
+      const fn = ('Familie ' + fam.name).toUpperCase();
+      const fs = fitSize(fn, W * 0.03, FONTS.sans, 700, 'normal', (W - 2 * M) * 0.8);
+      spacedText(s, fn, W / 2, fy + W * 0.045,
+        { size: fs, family: FONTS.sans, weight: 700, fill: '#1A1A1A' }, fs * 0.12, 'center');
+      if (fam.city) {
+        spacedText(s, fam.city.toUpperCase(), W / 2, fy + W * 0.073,
+          { size: W * 0.015, family: FONTS.sans, weight: 500, fill: '#A6A6A6' }, W * 0.0025, 'center');
+      }
     }
   }
 
@@ -516,23 +540,36 @@
       wobblyEllipse(s, cx + (rnd() - 0.5) * figW * 0.1, topY + headR,
         headR, headR * (1.05 + rnd() * 0.2), (rnd() - 0.5) * 0.35, { fill: FIG }, rnd);
 
-      // 3 dicht gesetzte Striche → Körper innen weitgehend geschlossen,
-      // Silhouette bleibt rau; Enden ungleich lang, deutliche Verjüngung
+      // Immer 5 Striche: außen kurz (Hände/Arme), daneben lang (Beine),
+      // Mitte kurz — Enden leicht ungleich, deutliche Verjüngung
       const bodyTop = topY + headR * (1.85 + rnd() * 0.25);
-      const bodyBend = (rnd() - 0.5) * figW * 0.4;           // gemeinsamer Schwung
-      for (let st = 0; st < 3; st++) {
-        const off = (st - 1) * figW * 0.3;
-        const wTop = figW * (0.38 + rnd() * 0.06);
-        const wBot = wTop * (0.4 + rnd() * 0.2);
-        const botY = baseY - rnd() * figH * 0.05;
-        const bend = bodyBend + (rnd() - 0.5) * figW * 0.18;
-        brushStroke(cx, off, wTop, wBot, bodyTop, botY, bend);
+      const bodyBend = (rnd() - 0.5) * figW * 0.35;          // gemeinsamer Schwung
+      const spanY = baseY - bodyTop;
+      const armBot = () => bodyTop + spanY * (0.4 + rnd() * 0.08);
+      const legBot = () => baseY - rnd() * figH * 0.03;
+      const midBot = bodyTop + spanY * (0.52 + rnd() * 0.08);
+      const strokes = [
+        { off: -2, bot: armBot(), w: 0.15 },   // Hand/Arm links (kurz)
+        { off: -1, bot: legBot(), w: 0.21 },   // Bein links (lang)
+        { off:  0, bot: midBot,   w: 0.17 },   // Mitte (kurz)
+        { off:  1, bot: legBot(), w: 0.21 },   // Bein rechts (lang)
+        { off:  2, bot: armBot(), w: 0.15 },   // Hand/Arm rechts (kurz)
+      ];
+      let leftLegX = cx - figW * 0.21;
+      for (const st of strokes) {
+        const off = st.off * figW * 0.21;
+        const wTop = figW * (st.w + rnd() * 0.03);
+        const wBot = wTop * (0.45 + rnd() * 0.2);
+        const bend = bodyBend * (st.off === 0 ? 0.5 : 1) + (rnd() - 0.5) * figW * 0.12;
+        brushStroke(cx, off, wTop, wBot, bodyTop, st.bot, bend);
+        if (st.off === -1) leftLegX = cx + off + bend * 0.6;
       }
 
-      // Name handschriftlich, mittig im (geschlossenen) Körper
-      const nmSize = fitSize(m.name, Math.min(W * 0.042, figW * 0.52), FONTS.hand, 600, 'italic', (baseY - bodyTop) * 0.8);
-      s.text(m.name, cx + bodyBend * 0.5 + nmSize * 0.1, bodyTop + (baseY - bodyTop) * 0.52,
-        { size: nmSize, family: FONTS.hand, weight: 600, style: 'italic', fill: BG, align: 'center', rotate: -Math.PI / 2 });
+      // Name immer unten links am Bein (Handschrift, Figurenfarbe)
+      const nmSize = Math.min(W * 0.028, figW * 0.42);
+      s.text(m.name, Math.max(W * 0.02 + nmSize * 2, leftLegX - figW * 0.24), baseY - nmSize * 0.25,
+        { size: nmSize, family: FONTS.hand, weight: 600, style: 'italic',
+          fill: FIG, align: 'right', rotate: -0.1 });
     });
 
     s.text('Familie ' + fam.name, W / 2, H - H * 0.034,
@@ -542,8 +579,8 @@
   const PAINTERS = {
     'smiley':         (s, fam, o) => paintSmiley(s, fam, o),
     'jahre':          (s, fam) => paintJahre(s, fam),
-    'raetsel-modern': (s, fam) => paintRaetsel(s, fam, 'modern'),
-    'raetsel-pinsel': (s, fam) => paintRaetsel(s, fam, 'pinsel'),
+    'raetsel-modern': (s, fam, o) => paintRaetsel(s, fam, 'modern', o),
+    'raetsel-pinsel': (s, fam, o) => paintRaetsel(s, fam, 'pinsel', o),
     'figuren':        (s, fam, o) => paintFiguren(s, fam, o),
   };
 
@@ -554,6 +591,7 @@
       this.size = 'A3';
       this.accent = '#2B3FCB';   // Smiley-Farbe
       this.accent2 = '#141414';  // Figuren-Farbe
+      this.accent3 = '#E8495A';  // Rätsel-Pinsel-Farbe (einheitlicher Zeichnungslook)
       this.family = {
         name: 'Weber',
         city: '',
@@ -583,16 +621,19 @@
           .slice(0, 8),
       };
     }
+    _opts() {
+      return { accent: this.accent, accent2: this.accent2, accent3: this.accent3 };
+    }
     renderPreview(canvas) {
       const { w, h } = this.dims();
       const surface = new CanvasSurface(canvas, w, h);
-      PAINTERS[this.variant](surface, this._cleanFamily(), { accent: this.accent, accent2: this.accent2 });
+      PAINTERS[this.variant](surface, this._cleanFamily(), this._opts());
       surface.watermark();
     }
     generateSVG() {
       const { w, h } = this.dims();
       const surface = new SvgSurface(w, h);
-      PAINTERS[this.variant](surface, this._cleanFamily(), { accent: this.accent, accent2: this.accent2 });
+      PAINTERS[this.variant](surface, this._cleanFamily(), this._opts());
       return surface.toString();
     }
     lineItemProperties() {
@@ -603,7 +644,9 @@
         'Ort': fam.city,
         'Mitglieder': fam.members.map((m) => m.name + ' (' + m.born.getFullYear() + ')').join(', '),
         'Format': SIZES[this.size].label,
-        'Akzentfarbe': this.variant === 'smiley' ? this.accent : this.variant === 'figuren' ? this.accent2 : '—',
+        'Akzentfarbe': this.variant === 'smiley' ? this.accent
+          : this.variant === 'figuren' ? this.accent2
+          : this.variant === 'raetsel-pinsel' ? this.accent3 : '—',
       };
     }
   }
@@ -635,9 +678,10 @@
       if (el) el.textContent = gen.price().toFixed(2).replace('.', ',') + ' €';
     }
     function updateAccentVisibility() {
-      const smiley = $('accentRowSmiley'), fig = $('accentRowFiguren');
+      const smiley = $('accentRowSmiley'), fig = $('accentRowFiguren'), rp = $('accentRowRaetsel');
       if (smiley) smiley.hidden = gen.variant !== 'smiley';
       if (fig) fig.hidden = gen.variant !== 'figuren';
+      if (rp) rp.hidden = gen.variant !== 'raetsel-pinsel';
     }
 
     /* Familie */
@@ -684,6 +728,7 @@
     /* Farben */
     $('famAccent')?.addEventListener('input', (e) => { gen.accent = e.target.value; rerender(); });
     $('famAccent2')?.addEventListener('input', (e) => { gen.accent2 = e.target.value; rerender(); });
+    $('famAccent3')?.addEventListener('input', (e) => { gen.accent3 = e.target.value; rerender(); });
 
     /* Format */
     document.querySelectorAll('.fam-size').forEach((btn) => {
