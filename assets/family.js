@@ -424,14 +424,13 @@
     const inWord = new Set();
     placements.forEach((p) => p.cells.forEach(([r, c]) => inWord.add(r + ':' + c)));
 
-    const rndL = rng('letters:' + fam.name + style);
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const hit = inWord.has(r + ':' + c);
         const o = style === 'pinsel'
-          // Zeichnungseffekt: eine Farbe, Handschrift, jedes Zeichen kippelt leicht
-          ? { size: cell * 0.5, family: FONTS.hand, style: 'italic', fill: ACC,
-              rotate: (rndL() - 0.5) * 0.16 }
+          // Eine Wahlfarbe, klassische aufrechte Buchstaben — der
+          // Zeichnungseffekt kommt von den handgemalten Einkreisungen
+          ? { size: cell * 0.44, family: FONTS.sans, weight: 400, fill: ACC }
           : { size: cell * 0.42, family: FONTS.sans, weight: hit ? 700 : 300, fill: hit ? '#111111' : '#BFBFBF' };
         s.text(grid[r][c], gx + (c + 0.5) * cell, gy + (r + 0.5) * cell + o.size * 0.35,
           { ...o, align: 'center' });
@@ -462,27 +461,17 @@
       });
     }
 
+    // Fußzeile klassisch (bei Pinsel in der Wahlfarbe, sonst schwarz/grau)
     const fy = H - M - H * 0.055;
     s.polyline([[W / 2 - W * 0.118, fy], [W / 2 + W * 0.118, fy]], { stroke: inkMain, lw: cell / 14 });
-    if (style === 'pinsel') {
-      // Fußzeile handschriftlich, gleiche Farbe (einheitlicher Zeichnungslook)
-      const fn = 'Familie ' + fam.name;
-      const fs = fitSize(fn, W * 0.038, FONTS.hand, 600, 'italic', (W - 2 * M) * 0.8);
-      s.text(fn, W / 2, fy + W * 0.048,
-        { size: fs, family: FONTS.hand, weight: 600, style: 'italic', fill: ACC, align: 'center' });
-      if (fam.city) {
-        s.text(fam.city, W / 2, fy + W * 0.078,
-          { size: W * 0.02, family: FONTS.hand, style: 'italic', fill: ACC, align: 'center' });
-      }
-    } else {
-      const fn = ('Familie ' + fam.name).toUpperCase();
-      const fs = fitSize(fn, W * 0.03, FONTS.sans, 700, 'normal', (W - 2 * M) * 0.8);
-      spacedText(s, fn, W / 2, fy + W * 0.045,
-        { size: fs, family: FONTS.sans, weight: 700, fill: '#1A1A1A' }, fs * 0.12, 'center');
-      if (fam.city) {
-        spacedText(s, fam.city.toUpperCase(), W / 2, fy + W * 0.073,
-          { size: W * 0.015, family: FONTS.sans, weight: 500, fill: '#A6A6A6' }, W * 0.0025, 'center');
-      }
+    const fn = ('Familie ' + fam.name).toUpperCase();
+    const fs = fitSize(fn, W * 0.03, FONTS.sans, 700, 'normal', (W - 2 * M) * 0.8);
+    spacedText(s, fn, W / 2, fy + W * 0.045,
+      { size: fs, family: FONTS.sans, weight: 700, fill: inkMain }, fs * 0.12, 'center');
+    if (fam.city) {
+      spacedText(s, fam.city.toUpperCase(), W / 2, fy + W * 0.073,
+        { size: W * 0.015, family: FONTS.sans, weight: 500,
+          fill: style === 'pinsel' ? ACC : '#A6A6A6' }, W * 0.0025, 'center');
     }
   }
 
@@ -540,36 +529,34 @@
       wobblyEllipse(s, cx + (rnd() - 0.5) * figW * 0.1, topY + headR,
         headR, headR * (1.05 + rnd() * 0.2), (rnd() - 0.5) * 0.35, { fill: FIG }, rnd);
 
-      // Immer 5 Striche: außen kurz (Hände/Arme), daneben lang (Beine),
-      // Mitte kurz — Enden leicht ungleich, deutliche Verjüngung
+      // Immer 5 dicht gesetzte Striche → Körper wie vorher weitgehend
+      // geschlossen: außen kurz (Hände/Arme), daneben lang (Beine),
+      // Mitte kurz; Enden leicht ungleich, deutliche Verjüngung
       const bodyTop = topY + headR * (1.85 + rnd() * 0.25);
       const bodyBend = (rnd() - 0.5) * figW * 0.35;          // gemeinsamer Schwung
       const spanY = baseY - bodyTop;
-      const armBot = () => bodyTop + spanY * (0.4 + rnd() * 0.08);
-      const legBot = () => baseY - rnd() * figH * 0.03;
-      const midBot = bodyTop + spanY * (0.52 + rnd() * 0.08);
+      const armBot = () => bodyTop + spanY * (0.42 + rnd() * 0.08);
+      const legBot = () => baseY - rnd() * figH * 0.04;
+      const midBot = bodyTop + spanY * (0.55 + rnd() * 0.08);
       const strokes = [
-        { off: -2, bot: armBot(), w: 0.15 },   // Hand/Arm links (kurz)
-        { off: -1, bot: legBot(), w: 0.21 },   // Bein links (lang)
-        { off:  0, bot: midBot,   w: 0.17 },   // Mitte (kurz)
-        { off:  1, bot: legBot(), w: 0.21 },   // Bein rechts (lang)
-        { off:  2, bot: armBot(), w: 0.15 },   // Hand/Arm rechts (kurz)
+        { off: -2, bot: armBot(), w: 0.24 },   // Hand/Arm links (kurz)
+        { off: -1, bot: legBot(), w: 0.30 },   // Bein links (lang)
+        { off:  0, bot: midBot,   w: 0.26 },   // Mitte (kurz)
+        { off:  1, bot: legBot(), w: 0.30 },   // Bein rechts (lang)
+        { off:  2, bot: armBot(), w: 0.24 },   // Hand/Arm rechts (kurz)
       ];
-      let leftLegX = cx - figW * 0.21;
       for (const st of strokes) {
-        const off = st.off * figW * 0.21;
+        const off = st.off * figW * 0.19;
         const wTop = figW * (st.w + rnd() * 0.03);
         const wBot = wTop * (0.45 + rnd() * 0.2);
-        const bend = bodyBend * (st.off === 0 ? 0.5 : 1) + (rnd() - 0.5) * figW * 0.12;
+        const bend = bodyBend * (st.off === 0 ? 0.5 : 1) + (rnd() - 0.5) * figW * 0.1;
         brushStroke(cx, off, wTop, wBot, bodyTop, st.bot, bend);
-        if (st.off === -1) leftLegX = cx + off + bend * 0.6;
       }
 
-      // Name immer unten links am Bein (Handschrift, Figurenfarbe)
-      const nmSize = Math.min(W * 0.028, figW * 0.42);
-      s.text(m.name, Math.max(W * 0.02 + nmSize * 2, leftLegX - figW * 0.24), baseY - nmSize * 0.25,
-        { size: nmSize, family: FONTS.hand, weight: 600, style: 'italic',
-          fill: FIG, align: 'right', rotate: -0.1 });
+      // Name wie vorher: handschriftlich, vertikal im geschlossenen Körper
+      const nmSize = fitSize(m.name, Math.min(W * 0.042, figW * 0.52), FONTS.hand, 600, 'italic', (midBot - bodyTop) * 0.94);
+      s.text(m.name, cx + bodyBend * 0.5 + nmSize * 0.1, bodyTop + (midBot - bodyTop) * 0.52,
+        { size: nmSize, family: FONTS.hand, weight: 600, style: 'italic', fill: BG, align: 'center', rotate: -Math.PI / 2 });
     });
 
     s.text('Familie ' + fam.name, W / 2, H - H * 0.034,
