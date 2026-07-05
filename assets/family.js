@@ -36,7 +36,7 @@
 
   const FONTS = {
     display: 'Georgia, "Times New Roman", serif',
-    didot:   '"Didot", Georgia, "Times New Roman", serif',
+    didot:   '"Playfair Display", "Didot", Georgia, "Times New Roman", serif',
     sans:    '"Helvetica Neue", Helvetica, Arial, sans-serif',
     hand:    '"Caveat", "Segoe Script", "Bradley Hand", "Comic Sans MS", cursive',
   };
@@ -130,6 +130,12 @@
       c.textAlign = o.align || 'left';
       c.textBaseline = 'alphabetic';
       c.fillText(str, x, y);
+      if (o.strokeWidth) {
+        c.strokeStyle = o.fill;
+        c.lineWidth = o.strokeWidth;
+        c.lineJoin = 'round';
+        c.strokeText(str, x, y);
+      }
       c.restore();
     }
     watermark() {
@@ -191,87 +197,168 @@
         ' font-family=\'' + o.family + '\' font-size="' + o.size.toFixed(2) + '"' +
         (o.weight ? ' font-weight="' + o.weight + '"' : '') +
         (o.style === 'italic' ? ' font-style="italic"' : '') +
+        (o.strokeWidth ? ' stroke="' + o.fill + '" stroke-width="' + o.strokeWidth.toFixed(2) + '" stroke-linejoin="round"' : '') +
         ' fill="' + o.fill + '" text-anchor="' + anchor + '">' + esc(str) + '</text>');
     }
     watermark() { /* Druckdatei bleibt sauber */ }
     toString() { return this.parts.concat('</svg>').join('\n'); }
   }
 
-  /* ══ Painter · smiley ══ */
+  /* ── Organik-Helfer ─────────────────────────────────────── */
+
+  /** Handgezeichnet wirkende Ellipse: niederfrequentes Radius-Wobbeln. */
+  function wobblyEllipse(s, cx, cy, rx, ry, tilt, o, rnd) {
+    const a1 = 0.03 + rnd() * 0.03, a2 = 0.02 + rnd() * 0.03;
+    const p1 = rnd() * Math.PI * 2, p2 = rnd() * Math.PI * 2;
+    const pts = [];
+    const steps = 44;
+    for (let k = 0; k <= steps; k++) {
+      const t = (k / steps) * Math.PI * 2;
+      const w = 1 + a1 * Math.sin(t * 2 + p1) + a2 * Math.sin(t * 3 + p2);
+      const px0 = Math.cos(t) * rx * w, py0 = Math.sin(t) * ry * w;
+      pts.push([cx + Math.cos(tilt) * px0 - Math.sin(tilt) * py0,
+                cy + Math.sin(tilt) * px0 + Math.cos(tilt) * py0]);
+    }
+    s.polyline(pts, { ...o, close: true });
+  }
+
+  /** Wort Buchstabe für Buchstabe mit leichtem Hüpfen (knubbeliger Look). */
+  function bouncyText(s, str, x, y, o, rnd) {
+    let cx = x;
+    for (const ch of str) {
+      const dy = (rnd() - 0.5) * o.size * 0.06;
+      s.text(ch, cx, y + dy, o);
+      cx += measure(ch, o.size, o.family, o.weight, o.style) + (o.spacing || 0);
+    }
+    return cx - x;
+  }
+  function bouncyWidth(str, o) {
+    let w = 0;
+    for (const ch of str) w += measure(ch, o.size, o.family, o.weight, o.style) + (o.spacing || 0);
+    return w;
+  }
+
+  /** Text mit Laufweite (Letter-Spacing), zentrierbar. */
+  function spacedText(s, str, x, y, o, spacing, align) {
+    let total = 0;
+    for (const ch of str) total += measure(ch, o.size, o.family, o.weight, o.style) + spacing;
+    total -= spacing;
+    let cx = align === 'center' ? x - total / 2 : align === 'right' ? x - total : x;
+    for (const ch of str) {
+      s.text(ch, cx, y, { ...o, align: 'left' });
+      cx += measure(ch, o.size, o.family, o.weight, o.style) + spacing;
+    }
+  }
+
+  /* ══ Painter · smiley ══
+     Referenztreue: dicht gepackte, handgezeichnet-wackelige Gesichter,
+     die sich fast berühren; knubbelige fette Typo in den vier Ecken. */
   function paintSmiley(s, fam, opts) {
-    const W = s.W, H = s.H, M = W * 0.084;
+    const W = s.W, H = s.H, M = W * 0.09;
     const BLUE = opts.accent || '#2B3FCB', CREAM = '#F6F1E7';
     s.rect(0, 0, W, H, CREAM);
     const rnd = rng('smiley:' + fam.name + fam.members.map((m) => m.name).join());
 
+    // Knubbelige Typo: fett + Kontur-Verfettung + leichtes Hüpfen
     const title = fam.name.toLowerCase();
-    const tSize = fitSize(title, W * 0.14, FONTS.display, 900, 'normal', W - 2 * M - W * 0.17);
-    s.text(title, M, M + tSize * 0.82, { size: tSize, family: FONTS.display, weight: 900, fill: BLUE });
-    s.text('the', W - M, M + W * 0.04, { size: W * 0.034, family: FONTS.display, weight: 700, fill: BLUE, align: 'right' });
-    s.text('family', W - M, H - M + W * 0.008, { size: W * 0.084, family: FONTS.display, weight: 900, fill: BLUE, align: 'right' });
-    s.text('*', M, H - M, { size: W * 0.032, family: FONTS.display, weight: 700, fill: BLUE });
+    const tOpts = { family: FONTS.display, weight: 900, fill: BLUE };
+    let tSize = fitSize(title, W * 0.15, FONTS.display, 900, 'normal', W - 2 * M - W * 0.15);
+    bouncyText(s, title, M, M + tSize * 0.78,
+      { ...tOpts, size: tSize, strokeWidth: tSize * 0.045 }, rnd);
+    const theSize = W * 0.038;
+    s.text('the', W - M - measure('the', theSize, FONTS.display, 900), M + theSize * 0.9,
+      { ...tOpts, size: theSize, strokeWidth: theSize * 0.045 });
+    const famSize = W * 0.105;
+    const famW = bouncyWidth('family', { size: famSize, family: FONTS.display, weight: 900 });
+    bouncyText(s, 'family', W - M - famW, H - M * 0.62,
+      { ...tOpts, size: famSize, strokeWidth: famSize * 0.045 }, rnd);
+    const estYear = Math.min(...fam.members.map((m) => m.born.getFullYear()));
+    const starSize = W * 0.036;
+    s.text('est. ' + estYear, M, H - M * 0.62,
+      { ...tOpts, size: starSize, strokeWidth: starSize * 0.04 });
 
+    // Gesichter: dicht an dicht, fast berührend
     const n = fam.members.length;
     const cols = n <= 2 ? n : Math.ceil(Math.sqrt(n));
     const rows = Math.ceil(n / cols);
-    const areaTop = M + tSize + W * 0.034, areaBot = H - M - W * 0.1;
+    const areaTop = M + tSize + W * 0.02;
+    const areaBot = H - M - W * 0.115;
     const cell = Math.min((W - 2 * M) / cols, (areaBot - areaTop) / rows);
     const gx = (W - cell * cols) / 2;
     const gy = areaTop + ((areaBot - areaTop) - cell * rows) / 2;
-    const lw = Math.max(1.6, cell * 0.05);
+    const lw = Math.max(1.8, cell * 0.055);
 
     for (let i = 0; i < n; i++) {
       const col = i % cols, row = Math.floor(i / cols);
       const lastCount = n - (rows - 1) * cols;
       const offX = row === rows - 1 ? (cols - lastCount) * cell / 2 : 0;
-      const cx = gx + offX + (col + 0.5) * cell;
-      const cy = gy + (row + 0.5) * cell;
-      const r = cell * 0.42;
-      const tilt = (rnd() - 0.5) * 0.3, squish = 0.92 + rnd() * 0.12;
-      s.ellipse(cx, cy, r, r * squish, tilt, { stroke: BLUE, lw });
-      const er = r * 0.13;
+      const cx = gx + offX + (col + 0.5) * cell + (rnd() - 0.5) * cell * 0.02;
+      const cy = gy + (row + 0.5) * cell + (rnd() - 0.5) * cell * 0.02;
+      const r = cell * 0.465;                          // fast berührend
+      const tilt = (rnd() - 0.5) * 0.5;                // deutlich individueller
+      const squish = 0.88 + rnd() * 0.2;
+      wobblyEllipse(s, cx, cy, r, r * squish, tilt, { stroke: BLUE, lw }, rnd);
+
+      // Augen: schmale vertikale Ovale, pro Gesicht variierend
+      const eyeH = r * (0.2 + rnd() * 0.1);
+      const eyeW = eyeH * (0.36 + rnd() * 0.14);
+      const eyeY = -r * (0.16 + rnd() * 0.1);
+      const eyeDX = r * (0.3 + rnd() * 0.1);
       const eye = (dx) => {
-        const ex = cx + Math.cos(tilt) * dx - Math.sin(tilt) * (-r * 0.18);
-        const ey = cy + Math.sin(tilt) * dx + Math.cos(tilt) * (-r * 0.18);
-        s.ellipse(ex, ey, er, er * 1.9, tilt, { fill: BLUE });
+        const ex = cx + Math.cos(tilt) * dx - Math.sin(tilt) * eyeY;
+        const ey = cy + Math.sin(tilt) * dx + Math.cos(tilt) * eyeY;
+        s.ellipse(ex, ey, eyeW, eyeH, tilt + (rnd() - 0.5) * 0.2, { fill: BLUE });
       };
-      eye(-r * 0.34); eye(r * 0.34);
-      // Lächeln als Polylinie (Bogen)
+      eye(-eyeDX); eye(eyeDX);
+
+      // Breites Lächeln, Weite und Krümmung variieren
+      const smR = r * (0.55 + rnd() * 0.12);
+      const smY = r * (0.02 + rnd() * 0.1);
+      const a0 = (0.18 + rnd() * 0.08) * Math.PI;
+      const a1e = Math.PI - a0;
       const pts = [];
-      for (let k = 0; k <= 14; k++) {
-        const a = 0.25 * Math.PI + (k / 14) * 0.5 * Math.PI;
-        const px0 = Math.cos(a) * r * 0.55, py0 = r * 0.08 + Math.sin(a) * r * 0.55;
-        pts.push([cx + Math.cos(tilt) * px0 - Math.sin(tilt) * py0, cy + Math.sin(tilt) * px0 + Math.cos(tilt) * py0]);
+      for (let k = 0; k <= 16; k++) {
+        const a = a0 + (k / 16) * (a1e - a0);
+        const px0 = Math.cos(a) * smR, py0 = smY + Math.sin(a) * smR * (0.82 + rnd() * 0.02);
+        pts.push([cx + Math.cos(tilt) * px0 - Math.sin(tilt) * py0,
+                  cy + Math.sin(tilt) * px0 + Math.cos(tilt) * py0]);
       }
-      s.polyline(pts, { stroke: BLUE, lw });
+      s.polyline(pts, { stroke: BLUE, lw: lw * 0.92 });
     }
   }
 
-  /* ══ Painter · jahre ══ */
+  /* ══ Painter · jahre ══
+     Referenztreue: große, elegante High-Contrast-Serifen (Didot-Stil),
+     Zahlenblöcke exakt mittig, viel Weißraum. Kundenwunsch ergänzt:
+     letzte zwei Ziffern hochgestellt, Name bündig darunter. */
   function paintJahre(s, fam) {
-    const W = s.W, H = s.H, M = H * 0.066;
+    const W = s.W, H = s.H, M = H * 0.085;
     s.rect(0, 0, W, H, '#FFFFFF');
     const mem = fam.members.slice().sort((a, b) => a.born - b.born);
     const n = mem.length;
-    const rowH = Math.min(H * 0.18, (H - 2 * M) / n);
-    const big = rowH * 0.62, small = big * 0.58;
-    let y = (H - rowH * n) / 2 + rowH * 0.58;
+    const rowH = Math.min(H * 0.2, (H - 2 * M) / n);
+    const big = Math.min(rowH * 0.72, W * 0.24);
+    const small = big * 0.55;
+    let y = (H - rowH * n) / 2 + rowH * 0.62;
 
     for (const m of mem) {
       const yr = String(m.born.getFullYear());
       const head = yr.slice(0, 2), tail = yr.slice(2);
-      const headW = measure(head, big, FONTS.didot, 400);
-      const tailW = measure(tail, small, FONTS.didot, 400);
-      const nm = m.name.toUpperCase();
-      const nmSize = fitSize(nm, big * 0.17, FONTS.sans, 600, 'normal', Math.max(tailW, W * 0.1));
-      const nmW = measure(nm, nmSize, FONTS.sans, 600);
-      const blockW = headW + big * 0.07 + Math.max(tailW, nmW);
+      const gap = big * 0.05;
+      const headW = measure(head, big, FONTS.didot, 500);
+      const tailW = measure(tail, small, FONTS.didot, 500);
+      // Blockbreite = Gesamtziffern → optisch mittig wie in der Referenz
+      const blockW = headW + gap + tailW;
       const x = (W - blockW) / 2;
 
-      s.text(head, x, y, { size: big, family: FONTS.didot, fill: '#141414' });
-      s.text(tail, x + headW + big * 0.07, y - (big - small), { size: small, family: FONTS.didot, fill: '#141414' });
-      s.text(nm, x + headW + big * 0.07, y - (big - small) + small * 0.32 + nmSize,
-        { size: nmSize, family: FONTS.sans, weight: 600, fill: '#8A8A8A' });
+      s.text(head, x, y, { size: big, family: FONTS.didot, weight: 500, fill: '#161616' });
+      s.text(tail, x + headW + gap, y - (big - small) * 0.72,
+        { size: small, family: FONTS.didot, weight: 500, fill: '#161616' });
+      // Name mit Laufweite, bündig unter den hochgestellten Ziffern
+      const nm = m.name.toUpperCase();
+      const nmSize = Math.min(big * 0.11, fitSize(nm, big * 0.11, FONTS.sans, 500, 'normal', tailW * 1.6));
+      spacedText(s, nm, x + headW + gap, y - (big - small) * 0.72 + small * 0.22 + nmSize,
+        { size: nmSize, family: FONTS.sans, weight: 500, fill: '#9C9C9C' }, nmSize * 0.22, 'left');
       y += rowH;
     }
   }
@@ -326,12 +413,14 @@
     const inWord = new Set();
     placements.forEach((p) => p.cells.forEach(([r, c]) => inWord.add(r + ':' + c)));
 
+    // Referenztreue: kleine, leichte Buchstaben mit viel Luft im Raster;
+    // Namen deutlich schwerer und dunkler abgesetzt
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const hit = inWord.has(r + ':' + c);
         const o = style === 'pinsel'
-          ? { size: cell * 0.52, family: FONTS.hand, style: 'italic', fill: '#2A2A2A' }
-          : { size: cell * 0.5, family: FONTS.sans, weight: hit ? 800 : 400, fill: hit ? '#1A1A1A' : '#C8C8C8' };
+          ? { size: cell * 0.5, family: FONTS.hand, style: 'italic', fill: '#2A2A2A' }
+          : { size: cell * 0.42, family: FONTS.sans, weight: hit ? 700 : 300, fill: hit ? '#111111' : '#BFBFBF' };
         s.text(grid[r][c], gx + (c + 0.5) * cell, gy + (r + 0.5) * cell + o.size * 0.35,
           { ...o, align: 'center' });
       }
@@ -362,19 +451,23 @@
     }
 
     const fy = H - M - H * 0.055;
-    s.polyline([[W / 2 - W * 0.118, fy], [W / 2 + W * 0.118, fy]], { stroke: '#1A1A1A', lw: cell / 12 });
+    s.polyline([[W / 2 - W * 0.118, fy], [W / 2 + W * 0.118, fy]], { stroke: '#1A1A1A', lw: cell / 14 });
     const fn = ('Familie ' + fam.name).toUpperCase();
-    const fs = fitSize(fn, W * 0.034, FONTS.sans, 700, 'normal', W - 2 * M);
-    s.text(fn, W / 2, fy + W * 0.047, { size: fs, family: FONTS.sans, weight: 700, fill: '#1A1A1A', align: 'center' });
+    const fs = fitSize(fn, W * 0.03, FONTS.sans, 700, 'normal', (W - 2 * M) * 0.8);
+    spacedText(s, fn, W / 2, fy + W * 0.045,
+      { size: fs, family: FONTS.sans, weight: 700, fill: '#1A1A1A' }, fs * 0.12, 'center');
     if (fam.city) {
-      s.text(fam.city.toUpperCase(), W / 2, fy + W * 0.076,
-        { size: W * 0.017, family: FONTS.sans, weight: 500, fill: '#9A9A9A', align: 'center' });
+      spacedText(s, fam.city.toUpperCase(), W / 2, fy + W * 0.073,
+        { size: W * 0.015, family: FONTS.sans, weight: 500, fill: '#A6A6A6' }, W * 0.0025, 'center');
     }
   }
 
-  /* ══ Painter · figuren ══ */
+  /* ══ Painter · figuren ══
+     Referenztreue: organische, sich verjüngende Pinselstriche mit rauen
+     Kanten und ungleich langen Enden; Kopf als unregelmäßiger Klecks;
+     Figuren dicht gestaffelt mit leichter Überlappung statt Reihe. */
   function paintFiguren(s, fam, opts) {
-    const W = s.W, H = s.H, M = W * 0.1;
+    const W = s.W, H = s.H, M = W * 0.12;
     const FIG = opts.accent2 || '#141414', BG = '#F2EBDD';
     s.rect(0, 0, W, H, BG);
 
@@ -383,42 +476,67 @@
       .map((m) => ({ ...m, age: Math.max(0.5, (now - m.born) / 3.15576e10) }))
       .sort((a, b) => b.age - a.age);
     const maxAge = mem[0].age;
-    const baseY = H - M - H * 0.024;
-    const maxFigH = H - 2 * M - H * 0.056;
     const n = mem.length;
-    const slot = (W - 2 * M) / n;
     const rnd = rng('fig:' + fam.name + n);
 
+    const baseY0 = H - M - H * 0.02;
+    const maxFigH = H - 2 * M - H * 0.05;
+    // Dichte Staffelung: Figuren rücken zusammen und überlappen leicht
+    const clusterW = Math.min(W - 2 * M, W * 0.09 * n + W * 0.28);
+    const slot = clusterW / Math.max(1, n - 0.3);
+    const startX = (W - clusterW) / 2 + slot * 0.35;
+
+    /** Ein Pinselstrich: raue Kanten, Verjüngung, leichter Schwung. */
+    function brushStroke(cx, off, wTop, wBot, topYs, botYs, bend) {
+      const SEG = 7;
+      const left = [], right = [];
+      for (let k = 0; k <= SEG; k++) {
+        const t = k / SEG;
+        const y = topYs + (botYs - topYs) * t;
+        const wHere = wTop + (wBot - wTop) * t;
+        const sway = bend * Math.sin(t * Math.PI);
+        const jL = (rnd() - 0.5) * wHere * 0.22;
+        const jR = (rnd() - 0.5) * wHere * 0.22;
+        left.push([cx + off + sway - wHere / 2 + jL, y]);
+        right.push([cx + off + sway + wHere / 2 + jR, y]);
+      }
+      s.polyline(left.concat(right.reverse()), { fill: FIG, close: true });
+    }
+
     mem.forEach((m, i) => {
-      const hFrac = 0.34 + 0.66 * Math.min(1, m.age / maxAge);
+      const hFrac = 0.3 + 0.7 * Math.min(1, m.age / maxAge);
       const figH = maxFigH * hFrac;
-      const figW = Math.min(slot * 0.62, figH * 0.24 + W * 0.034);
-      const cx = M + slot * (i + 0.5) + (rnd() - 0.5) * slot * 0.1;
-      const headR = figW * 0.42;
+      const figW = Math.min(slot * 0.94, figH * 0.22 + W * 0.03);
+      const baseY = baseY0 - rnd() * H * 0.012;              // Standhöhe variiert
+      const cx = startX + slot * i + (rnd() - 0.5) * slot * 0.14;
+      const headR = figW * 0.4;
       const topY = baseY - figH;
 
-      s.ellipse(cx, topY + headR, headR, headR * 1.15, (rnd() - 0.5) * 0.2, { fill: FIG });
-      const bodyTop = topY + headR * 2.05;
+      // Kopf als unregelmäßiger Klecks
+      wobblyEllipse(s, cx + (rnd() - 0.5) * figW * 0.1, topY + headR,
+        headR, headR * (1.05 + rnd() * 0.2), (rnd() - 0.5) * 0.35, { fill: FIG }, rnd);
+
+      // 3 dicht gesetzte Striche → Körper innen weitgehend geschlossen,
+      // Silhouette bleibt rau; Enden ungleich lang, deutliche Verjüngung
+      const bodyTop = topY + headR * (1.85 + rnd() * 0.25);
+      const bodyBend = (rnd() - 0.5) * figW * 0.4;           // gemeinsamer Schwung
       for (let st = 0; st < 3; st++) {
-        const off = (st - 1) * figW * 0.34;
-        const wTop = figW * 0.30, wBot = figW * (0.16 + rnd() * 0.06);
-        const bend = (rnd() - 0.5) * figW * 0.35;
-        const midY = (bodyTop + baseY) / 2;
-        s.path([
-          ['M', cx + off - wTop / 2, bodyTop],
-          ['Q', cx + off + bend - wTop / 2, midY, cx + off - wBot / 2, baseY],
-          ['L', cx + off + wBot / 2, baseY],
-          ['Q', cx + off + bend + wTop / 2, midY, cx + off + wTop / 2, bodyTop],
-          ['Z'],
-        ], { fill: FIG });
+        const off = (st - 1) * figW * 0.3;
+        const wTop = figW * (0.38 + rnd() * 0.06);
+        const wBot = wTop * (0.4 + rnd() * 0.2);
+        const botY = baseY - rnd() * figH * 0.05;
+        const bend = bodyBend + (rnd() - 0.5) * figW * 0.18;
+        brushStroke(cx, off, wTop, wBot, bodyTop, botY, bend);
       }
-      const nmSize = fitSize(m.name, Math.min(W * 0.04, figW * 0.42), FONTS.hand, 400, 'italic', (baseY - bodyTop) * 0.86);
-      s.text(m.name, cx + nmSize * 0.32, bodyTop + (baseY - bodyTop) * 0.52,
-        { size: nmSize, family: FONTS.hand, style: 'italic', fill: BG, align: 'center', rotate: -Math.PI / 2 });
+
+      // Name handschriftlich, mittig im (geschlossenen) Körper
+      const nmSize = fitSize(m.name, Math.min(W * 0.042, figW * 0.52), FONTS.hand, 600, 'italic', (baseY - bodyTop) * 0.8);
+      s.text(m.name, cx + bodyBend * 0.5 + nmSize * 0.1, bodyTop + (baseY - bodyTop) * 0.52,
+        { size: nmSize, family: FONTS.hand, weight: 600, style: 'italic', fill: BG, align: 'center', rotate: -Math.PI / 2 });
     });
 
-    s.text('Familie ' + fam.name, W / 2, H - H * 0.032,
-      { size: W * 0.032, family: FONTS.hand, style: 'italic', fill: 'rgba(20,20,20,.55)', align: 'center' });
+    s.text('Familie ' + fam.name, W / 2, H - H * 0.034,
+      { size: W * 0.03, family: FONTS.hand, style: 'italic', fill: 'rgba(20,20,20,.5)', align: 'center' });
   }
 
   const PAINTERS = {
