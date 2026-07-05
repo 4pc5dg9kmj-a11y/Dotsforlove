@@ -428,9 +428,9 @@
       for (let c = 0; c < cols; c++) {
         const hit = inWord.has(r + ':' + c);
         const o = style === 'pinsel'
-          // Eine Wahlfarbe, klassische aufrechte Buchstaben — der
-          // Zeichnungseffekt kommt von den handgemalten Einkreisungen
-          ? { size: cell * 0.44, family: FONTS.sans, weight: 400, fill: ACC }
+          // Dicke, moderne Buchstaben sauber im Raster —
+          // der Pinsel-Effekt kommt allein von den Einkreisungen
+          ? { size: cell * 0.46, family: FONTS.sans, weight: 800, fill: '#2A2A2A' }
           : { size: cell * 0.42, family: FONTS.sans, weight: hit ? 700 : 300, fill: hit ? '#111111' : '#BFBFBF' };
         s.text(grid[r][c], gx + (c + 0.5) * cell, gy + (r + 0.5) * cell + o.size * 0.35,
           { ...o, align: 'center' });
@@ -438,26 +438,40 @@
     }
 
     if (style === 'pinsel') {
+      // Einkreisung als echter Pinselzug: Band mit variabler Breite,
+      // dünner Ansatz/Auslauf, die Enden überlappen sich sichtbar
       placements.forEach((p, pi) => {
         const first = p.cells[0], last = p.cells[p.cells.length - 1];
         const x1 = gx + (first[1] + 0.5) * cell, y1 = gy + (first[0] + 0.5) * cell;
         const x2 = gx + (last[1] + 0.5) * cell, y2 = gy + (last[0] + 0.5) * cell;
         const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
-        const len = Math.hypot(x2 - x1, y2 - y1) / 2 + cell * 0.62;
+        const rx = Math.hypot(x2 - x1, y2 - y1) / 2 + cell * 0.65;
+        const ry = cell * 0.64;
         const ang = Math.atan2(y2 - y1, x2 - x1);
-        const rr = rng('circle' + pi + p.word);
-        for (let pass = 0; pass < 2; pass++) {
-          const pts = [];
-          const steps = 36;
-          for (let k = 0; k <= steps; k++) {
-            const a = (k / steps) * Math.PI * 2;
-            const wob = 1 + (rr() - 0.5) * 0.09;
-            const px0 = Math.cos(a) * len * wob, py0 = Math.sin(a) * cell * 0.62 * wob;
-            pts.push([mx + Math.cos(ang) * px0 - Math.sin(ang) * py0,
-                      my + Math.sin(ang) * px0 + Math.cos(ang) * py0]);
-          }
-          s.polyline(pts, { stroke: ACC, lw: (3.4 - pass) * cell / 16, close: true });
+        const rr = rng('brush' + pi + p.word);
+        const p1 = rr() * Math.PI * 2, p2 = rr() * Math.PI * 2;
+        const a0 = rr() * Math.PI * 2;              // Ansatzpunkt variiert
+        const baseW = cell * 0.24;
+        const steps = 64;
+        const outer = [], inner = [];
+        for (let k = 0; k <= steps; k++) {
+          const u = k / steps;                       // 0..1 über 1.09 Umläufe
+          const a = a0 + u * Math.PI * 2 * 1.09;     // Enden überlappen
+          const wob = 1 + 0.045 * Math.sin(a * 2 + p1) + 0.035 * Math.sin(a * 3 + p2);
+          // Pinselbreite: dünn ansetzen, satt in der Mitte, dünn auslaufen
+          const endT = Math.min(1, Math.min(u / 0.1, (1 - u) / 0.14));
+          const wHere = baseW * (0.25 + 0.75 * endT) * (0.86 + 0.2 * Math.sin(a * 5 + p2));
+          const px0 = Math.cos(a) * rx * wob, py0 = Math.sin(a) * ry * wob;
+          // Normale der Ellipse für den Bandversatz
+          let nx = Math.cos(a) * ry, ny = Math.sin(a) * rx;
+          const nl = Math.hypot(nx, ny) || 1;
+          nx = nx / nl * wHere / 2; ny = ny / nl * wHere / 2;
+          const rot = (px, py) => [mx + Math.cos(ang) * px - Math.sin(ang) * py,
+                                   my + Math.sin(ang) * px + Math.cos(ang) * py];
+          outer.push(rot(px0 + nx, py0 + ny));
+          inner.push(rot(px0 - nx, py0 - ny));
         }
+        s.polyline(outer.concat(inner.reverse()), { fill: ACC, close: true });
       });
     }
 
@@ -499,7 +513,7 @@
     const slot = clusterW / Math.max(1, n - 0.3);
     const startX = (W - clusterW) / 2 + slot * 0.35;
 
-    /** Ein Pinselstrich: raue Kanten, Verjüngung, leichter Schwung. */
+    /** Ein Pinselstrich: leichte Kantenunruhe, Verjüngung, dezenter Schwung. */
     function brushStroke(cx, off, wTop, wBot, topYs, botYs, bend) {
       const SEG = 7;
       const left = [], right = [];
@@ -508,8 +522,8 @@
         const y = topYs + (botYs - topYs) * t;
         const wHere = wTop + (wBot - wTop) * t;
         const sway = bend * Math.sin(t * Math.PI);
-        const jL = (rnd() - 0.5) * wHere * 0.22;
-        const jR = (rnd() - 0.5) * wHere * 0.22;
+        const jL = (rnd() - 0.5) * wHere * 0.07;
+        const jR = (rnd() - 0.5) * wHere * 0.07;
         left.push([cx + off + sway - wHere / 2 + jL, y]);
         right.push([cx + off + sway + wHere / 2 + jR, y]);
       }
@@ -529,33 +543,34 @@
       wobblyEllipse(s, cx + (rnd() - 0.5) * figW * 0.1, topY + headR,
         headR, headR * (1.05 + rnd() * 0.2), (rnd() - 0.5) * 0.35, { fill: FIG }, rnd);
 
-      // Immer 5 dicht gesetzte Striche → Körper wie vorher weitgehend
-      // geschlossen: außen kurz (Hände/Arme), daneben lang (Beine),
-      // Mitte kurz; Enden leicht ungleich, deutliche Verjüngung
-      const bodyTop = topY + headR * (1.85 + rnd() * 0.25);
-      const bodyBend = (rnd() - 0.5) * figW * 0.35;          // gemeinsamer Schwung
+      // Immer 5 Striche MIT sichtbarer Lücke dazwischen:
+      // außen kurz (Hände/Arme), daneben lang (Beine), Mitte kurz.
+      // Striche ruhig gehalten: wenig Schwung, kaum Kantenrauschen.
+      const bodyTop = topY + headR * (1.85 + rnd() * 0.2);
+      const bodyBend = (rnd() - 0.5) * figW * 0.12;          // dezenter Schwung
       const spanY = baseY - bodyTop;
-      const armBot = () => bodyTop + spanY * (0.42 + rnd() * 0.08);
-      const legBot = () => baseY - rnd() * figH * 0.04;
-      const midBot = bodyTop + spanY * (0.55 + rnd() * 0.08);
+      const armBot = () => bodyTop + spanY * (0.42 + rnd() * 0.06);
+      const legBot = () => baseY - rnd() * figH * 0.02;
+      const midBot = bodyTop + spanY * (0.55 + rnd() * 0.05);
       const strokes = [
-        { off: -2, bot: armBot(), w: 0.24 },   // Hand/Arm links (kurz)
-        { off: -1, bot: legBot(), w: 0.30 },   // Bein links (lang)
-        { off:  0, bot: midBot,   w: 0.26 },   // Mitte (kurz)
-        { off:  1, bot: legBot(), w: 0.30 },   // Bein rechts (lang)
-        { off:  2, bot: armBot(), w: 0.24 },   // Hand/Arm rechts (kurz)
+        { off: -2, bot: armBot(), w: 0.13 },   // Hand/Arm links (kurz)
+        { off: -1, bot: legBot(), w: 0.16 },   // Bein links (lang)
+        { off:  0, bot: midBot,   w: 0.14 },   // Mitte (kurz)
+        { off:  1, bot: legBot(), w: 0.16 },   // Bein rechts (lang)
+        { off:  2, bot: armBot(), w: 0.13 },   // Hand/Arm rechts (kurz)
       ];
       for (const st of strokes) {
-        const off = st.off * figW * 0.19;
-        const wTop = figW * (st.w + rnd() * 0.03);
-        const wBot = wTop * (0.45 + rnd() * 0.2);
-        const bend = bodyBend * (st.off === 0 ? 0.5 : 1) + (rnd() - 0.5) * figW * 0.1;
+        const off = st.off * figW * 0.21;      // Abstand > Strichbreite → Lücke
+        const wTop = figW * (st.w + rnd() * 0.015);
+        const wBot = wTop * (0.6 + rnd() * 0.15);
+        const bend = bodyBend * (st.off === 0 ? 0.6 : 1) + (rnd() - 0.5) * figW * 0.04;
         brushStroke(cx, off, wTop, wBot, bodyTop, st.bot, bend);
       }
 
-      // Name wie vorher: handschriftlich, vertikal im geschlossenen Körper
-      const nmSize = fitSize(m.name, Math.min(W * 0.042, figW * 0.52), FONTS.hand, 600, 'italic', (midBot - bodyTop) * 0.94);
-      s.text(m.name, cx + bodyBend * 0.5 + nmSize * 0.1, bodyTop + (midBot - bodyTop) * 0.52,
+      // Name handschriftlich, vertikal auf dem Mittelstrich
+      const midW = figW * 0.14;
+      const nmSize = fitSize(m.name, Math.min(W * 0.03, midW * 0.85), FONTS.hand, 600, 'italic', (midBot - bodyTop) * 0.9);
+      s.text(m.name, cx + bodyBend * 0.6 + nmSize * 0.08, bodyTop + (midBot - bodyTop) * 0.52,
         { size: nmSize, family: FONTS.hand, weight: 600, style: 'italic', fill: BG, align: 'center', rotate: -Math.PI / 2 });
     });
 
