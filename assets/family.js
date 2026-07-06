@@ -46,6 +46,16 @@
 
   const NAME_PALETTE = ['#E8495A', '#845EC2', '#00C9A7', '#F9B233', '#4D9DE0', '#F28C50', '#9BC53D', '#C86FC9'];
 
+  /* ── Sprachabhängige Beschriftung ──────────────────────────
+     EN: "the {Name} Family" / "since {Jahr}"
+     DE: "Familie {Name}"    / "seit {Jahr}"                  */
+  function familyTitleLabel(fam) {
+    return fam.lang === 'en' ? ('the ' + fam.name + ' Family') : ('Familie ' + fam.name);
+  }
+  function sinceLabel(fam, year) {
+    return (fam.lang === 'en' ? 'since ' : 'seit ') + year;
+  }
+
   const VARIANTS = {
     'smiley':          { label: 'Smiley-Grid' },
     'jahre':           { label: 'Jahreszahlen' },
@@ -264,21 +274,27 @@
     const rnd = rng('smiley:' + fam.name + fam.members.map((m) => m.name).join());
 
     // Knubbelige Typo: fett + Kontur-Verfettung + leichtes Hüpfen
+    // EN: "{name} … the / est. {jahr} … family"  (Meme-Layout, wie Referenz)
+    // DE: "{name} … familie / seit {jahr}" (ohne "the", deutsche Wortfolge)
+    const isEn = fam.lang === 'en';
     const title = fam.name.toLowerCase();
     const tOpts = { family: FONTS.display, weight: 900, fill: BLUE };
     let tSize = fitSize(title, W * 0.15, FONTS.display, 900, 'normal', W - 2 * M - W * 0.15);
     bouncyText(s, title, M, M + tSize * 0.78,
       { ...tOpts, size: tSize, strokeWidth: tSize * 0.045 }, rnd);
-    const theSize = W * 0.038;
-    s.text('the', W - M - measure('the', theSize, FONTS.display, 900), M + theSize * 0.9,
-      { ...tOpts, size: theSize, strokeWidth: theSize * 0.045 });
+    if (isEn) {
+      const theSize = W * 0.038;
+      s.text('the', W - M - measure('the', theSize, FONTS.display, 900), M + theSize * 0.9,
+        { ...tOpts, size: theSize, strokeWidth: theSize * 0.045 });
+    }
+    const famWord = isEn ? 'family' : 'familie';
     const famSize = W * 0.105;
-    const famW = bouncyWidth('family', { size: famSize, family: FONTS.display, weight: 900 });
-    bouncyText(s, 'family', W - M - famW, H - M * 0.62,
+    const famW = bouncyWidth(famWord, { size: famSize, family: FONTS.display, weight: 900 });
+    bouncyText(s, famWord, W - M - famW, H - M * 0.62,
       { ...tOpts, size: famSize, strokeWidth: famSize * 0.045 }, rnd);
     const estYear = Math.min(...fam.members.map((m) => m.born.getFullYear()));
     const starSize = W * 0.036;
-    s.text('est. ' + estYear, M, H - M * 0.62,
+    s.text((isEn ? 'est. ' : 'seit ') + estYear, M, H - M * 0.62,
       { ...tOpts, size: starSize, strokeWidth: starSize * 0.04 });
 
     // Gesichter: dicht an dicht, fast berührend
@@ -505,16 +521,17 @@
     });
 
     // Fußbereich: Familienname FETT in der Stilschrift, darunter klein
-    // „since [Gründungsjahr]" in gedämpftem Grau. Kein Markenname.
+    // "since/seit [Gründungsjahr]" in gedämpftem Grau. Kein Markenname.
+    // EN: "the {Name} Family"  ·  DE: "Familie {Name}"
     const founded = fam.founded || Math.min(...fam.members.map((m) => m.born.getFullYear()));
     const ty = H - M - H * 0.045;
-    const title = fam.name;
+    const title = familyTitleLabel(fam);
     const tSize = fitSize(title, W * 0.055, ST.titleFont, ST.titleWeight, 'normal', W - 2 * M);
     s.text(title, W / 2, ty, {
       size: tSize, family: ST.titleFont, weight: ST.titleWeight, fill: '#1F1F1F',
       align: 'center', strokeWidth: ST.titleStroke ? tSize * ST.titleStroke : 0,
     });
-    s.text('since ' + founded, W / 2, ty + W * 0.038, {
+    s.text(sinceLabel(fam, founded), W / 2, ty + W * 0.038, {
       size: W * 0.024, family: ST.sinceFont, weight: ST.sinceWeight,
       style: ST.sinceStyle, fill: '#8C847C', align: 'center',
     });
@@ -584,14 +601,14 @@
       const legBot = () => baseY - rnd() * figH * 0.02;
       const midBot = bodyTop + spanY * (0.55 + rnd() * 0.05);
       const strokes = [
-        { off: -2, bot: armBot(), w: 0.13 },   // Hand/Arm links (kurz)
-        { off: -1, bot: legBot(), w: 0.16 },   // Bein links (lang)
-        { off:  0, bot: midBot,   w: 0.14 },   // Mitte (kurz)
-        { off:  1, bot: legBot(), w: 0.16 },   // Bein rechts (lang)
-        { off:  2, bot: armBot(), w: 0.13 },   // Hand/Arm rechts (kurz)
+        { off: -2, bot: armBot(), w: 0.17 },   // Hand/Arm links (kurz)
+        { off: -1, bot: legBot(), w: 0.20 },   // Bein links (lang)
+        { off:  0, bot: midBot,   w: 0.18 },   // Mitte (kurz)
+        { off:  1, bot: legBot(), w: 0.20 },   // Bein rechts (lang)
+        { off:  2, bot: armBot(), w: 0.17 },   // Hand/Arm rechts (kurz)
       ];
       for (const st of strokes) {
-        const off = st.off * figW * 0.21;      // Abstand > Strichbreite → Lücke
+        const off = st.off * figW * 0.195;     // Abstand knapp > Strichbreite → schmalere Lücke
         const wTop = figW * (st.w + rnd() * 0.015);
         const wBot = wTop * (0.6 + rnd() * 0.15);
         const bend = bodyBend * (st.off === 0 ? 0.6 : 1) + (rnd() - 0.5) * figW * 0.04;
@@ -605,7 +622,7 @@
         { size: nmSize, family: FONTS.hand, weight: 600, style: 'italic', fill: BG, align: 'center', rotate: -Math.PI / 2 });
     });
 
-    s.text('Familie ' + fam.name, W / 2, H - H * 0.034,
+    s.text(familyTitleLabel(fam), W / 2, H - H * 0.034,
       { size: W * 0.03, family: FONTS.hand, style: 'italic', fill: 'rgba(20,20,20,.5)', align: 'center' });
   }
 
@@ -630,6 +647,7 @@
         name: 'Weber',
         city: '',
         founded: null,   // Gründungsjahr der Familie (für "since …")
+        lang: 'de',      // Beschriftung: 'de' → "Familie Weber", 'en' → "the Weber Family"
         members: [
           { name: 'Michael', born: new Date('1985-04-12') },
           { name: 'Anna', born: new Date('1987-09-03') },
@@ -653,6 +671,7 @@
         name: this.family.name.trim() || 'Familie',
         city: (this.family.city || '').trim(),
         founded: founded >= 1000 && founded <= 9999 ? founded : null,
+        lang: this.family.lang === 'en' ? 'en' : 'de',
         members: this.family.members
           .filter((m) => m.name.trim() && !isNaN(m.born))
           .slice(0, 8),
@@ -678,6 +697,7 @@
       return {
         'Motiv': 'Familie · ' + (VARIANTS[this.variant]?.label || this.variant),
         'Familienname': fam.name,
+        'Beschriftung': fam.lang === 'en' ? 'Englisch' : 'Deutsch',
         'Gründungsjahr': fam.founded || '',
         'Mitglieder': fam.members.map((m) => m.name + ' (' + m.born.getFullYear() + ')').join(', '),
         'Format': SIZES[this.size].label,
@@ -723,6 +743,14 @@
     $('famName')?.addEventListener('input', (e) => { gen.family.name = e.target.value; rerender(); });
     $('famCity')?.addEventListener('input', (e) => { gen.family.city = e.target.value; rerender(); });
     $('famFounded')?.addEventListener('input', (e) => { gen.family.founded = e.target.value; rerender(); });
+    document.querySelectorAll('.fam-lang').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.fam-lang').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        gen.family.lang = btn.dataset.lang;
+        rerender();
+      });
+    });
 
     function renderMembers() {
       const box = $('famMembers');
