@@ -576,10 +576,10 @@
     const slot = clusterW / Math.max(1, n - 0.3);
     const startX = (W - clusterW) / 2 + slot * 0.35;
 
-    /** Ein Pinselstrich: leichte Kantenunruhe, Verjüngung, dezenter Schwung.
-        jitterScale dämpft Kantenrauschen (z.B. für den ruhigeren Mittelstrich). */
-    function brushStroke(cx, off, wTop, wBot, topYs, botYs, bend, jitterScale) {
-      const js = jitterScale === undefined ? 1 : jitterScale;
+    /** Kantenpunkte eines Pinselstrichs berechnen (ohne zu zeichnen):
+        leichte Kantenunruhe, Verjüngung, dezenter Schwung — bleibt
+        unangetastet für Arme & Beine, die ihre Unregelmäßigkeit behalten. */
+    function strokeEdges(cx, off, wTop, wBot, topYs, botYs, bend) {
       const SEG = 7;
       const left = [], right = [];
       for (let k = 0; k <= SEG; k++) {
@@ -587,12 +587,25 @@
         const y = topYs + (botYs - topYs) * t;
         const wHere = wTop + (wBot - wTop) * t;
         const sway = bend * Math.sin(t * Math.PI);
-        const jL = (rnd() - 0.5) * wHere * 0.07 * js;
-        const jR = (rnd() - 0.5) * wHere * 0.07 * js;
+        const jL = (rnd() - 0.5) * wHere * 0.07;
+        const jR = (rnd() - 0.5) * wHere * 0.07;
         left.push([cx + off + sway - wHere / 2 + jL, y]);
         right.push([cx + off + sway + wHere / 2 + jR, y]);
       }
-      s.polyline(left.concat(right.reverse()), { fill: FIG, close: true });
+      return { left, right, topYs, botYs };
+    }
+    function fillBand(leftPts, rightPts) {
+      s.polyline(leftPts.concat(rightPts.slice().reverse()), { fill: FIG, close: true });
+    }
+    /** x-Position einer (bereits berechneten) Kanten-Punktreihe bei beliebigem y,
+        linear zwischen den Stützpunkten interpoliert. */
+    function edgeXAtY(points, topYs, botYs, y) {
+      const span = botYs - topYs;
+      const tt = span === 0 ? 0 : Math.min(1, Math.max(0, (y - topYs) / span));
+      const idx = tt * (points.length - 1);
+      const i0 = Math.floor(idx), i1 = Math.min(points.length - 1, i0 + 1);
+      const frac = idx - i0;
+      return points[i0][0] + (points[i1][0] - points[i0][0]) * frac;
     }
 
     mem.forEach((m, i) => {
@@ -608,46 +621,53 @@
       wobblyEllipse(s, cx + (rnd() - 0.5) * figW * 0.1, topY + headR,
         headR, headR * (1.05 + rnd() * 0.2), (rnd() - 0.5) * 0.35, { fill: FIG }, rnd);
 
-      // Immer 5 Striche mit schmaler, gleichmäßiger Lücke dazwischen:
-      // außen kurz (Hände/Arme), daneben lang (Beine), Mitte kurz und
-      // exakt mittig. Der Mittelstrich-Abstand zu den Beinen ist bewusst
-      // enger als der Bein-Arm-Abstand — beide Seiten symmetrisch gleich.
+      // Immer 5 Striche: außen kurz (Hände/Arme), daneben lang (Beine),
+      // Mitte kurz. Arme & Beine behalten ihre organische Unregelmäßigkeit
+      // (eigener Schwung/Kantenrauschen wie zuvor) — nur der Mittelstrich
+      // wird NICHT eigenständig positioniert, sondern folgt den tatsäch-
+      // lichen Innenkanten der beiden Beine und wird dabei automatisch
+      // breiter oder schmaler, damit stets nur eine sehr schmale Lücke
+      // zu beiden Seiten bleibt.
       const bodyTop = topY + headR * (1.85 + rnd() * 0.2);
+      const bodyBend = (rnd() - 0.5) * figW * 0.12;          // dezenter Schwung
       const spanY = baseY - bodyTop;
       const armBot = () => bodyTop + spanY * (0.42 + rnd() * 0.06);
       const legBot = () => baseY - rnd() * figH * 0.02;
       const midBot = bodyTop + spanY * (0.55 + rnd() * 0.05);
 
-      const wArm = 0.19, wLeg = 0.23, wMid = 0.205;
-      const gapMidLeg = figW * 0.02;    // schmale Lücke Mitte↔Bein
-      const gapLegArm = figW * 0.035;   // etwas größere Lücke Bein↔Arm
-      const legOff = figW * (wMid + wLeg) / 2 + gapMidLeg;
+      const wArm = 0.19, wLeg = 0.23;
+      const gapMidLeg = figW * 0.018;   // sehr schmale Lücke Mitte↔Bein
+      const gapLegArm = figW * 0.035;   // Lücke Bein↔Arm
+      const legOff = figW * (wLeg + 0.16) / 2 + gapMidLeg; // Basisabstand (Mitte startet ~0.16 breit)
       const armOff = legOff + figW * (wLeg + wArm) / 2 + gapLegArm;
 
-      const strokes = [
-        { off: -armOff, bot: armBot(), w: wArm, type: 'arm', side: -1 },
-        { off: -legOff, bot: legBot(), w: wLeg, type: 'leg', side: -1 },
-        { off:  0,       bot: midBot,   w: wMid, type: 'mid', side:  0 },
-        { off:  legOff,  bot: legBot(), w: wLeg, type: 'leg', side:  1 },
-        { off:  armOff,  bot: armBot(), w: wArm, type: 'arm', side:  1 },
-      ];
-      // Beine (und Arme) spiegelsymmetrisch schwingen lassen — ein
-      // gemeinsamer Wert pro Paar, links/rechts gespiegelt — so bleibt
-      // die Lücke zur Mitte auf beiden Seiten gleich breit, statt
-      // unabhängig zu variieren.
-      const legBend = (rnd() - 0.5) * figW * 0.05;
-      const armBend = (rnd() - 0.5) * figW * 0.05;
-      for (const st of strokes) {
-        const wTop = figW * (st.w + rnd() * 0.015);
-        const wBot = wTop * (0.6 + rnd() * 0.15);
-        // Mittelstrich exakt gerade & mittig; Beine gespiegelt (gleicher
-        // Betrag beidseits); Arme dürfen etwas freier schwingen.
-        const bend = st.type === 'mid' ? 0
-          : st.type === 'leg' ? legBend * st.side
-          : armBend * st.side;
-        const jitter = st.type === 'mid' ? 0.2 : st.type === 'leg' ? 0.6 : 1;
-        brushStroke(cx, st.off, wTop, wBot, bodyTop, st.bot, bend, jitter);
+      const mkBend = () => bodyBend + (rnd() - 0.5) * figW * 0.04;
+      const legWTop = figW * (wLeg + rnd() * 0.015), legWBot = legWTop * (0.6 + rnd() * 0.15);
+      const armWTopL = figW * (wArm + rnd() * 0.015), armWBotL = armWTopL * (0.6 + rnd() * 0.15);
+      const armWTopR = figW * (wArm + rnd() * 0.015), armWBotR = armWTopR * (0.6 + rnd() * 0.15);
+
+      const legLeft  = strokeEdges(cx, -legOff, legWTop, legWBot, bodyTop, legBot(), mkBend());
+      const legRight = strokeEdges(cx,  legOff, legWTop, legWBot, bodyTop, legBot(), mkBend());
+      const armLeft  = strokeEdges(cx, -armOff, armWTopL, armWBotL, bodyTop, armBot(), mkBend());
+      const armRight = strokeEdges(cx,  armOff, armWTopR, armWBotR, bodyTop, armBot(), mkBend());
+      fillBand(legLeft.left, legLeft.right);
+      fillBand(legRight.left, legRight.right);
+      fillBand(armLeft.left, armLeft.right);
+      fillBand(armRight.left, armRight.right);
+
+      // Mittelstrich: bei jedem Segment exakt gapMidLeg von der jeweils
+      // tatsächlichen (unregelmäßigen) Bein-Innenkante entfernt — dadurch
+      // passt sich seine Breite automatisch an, die Lücke bleibt konstant.
+      const SEGM = 7;
+      const midLeftPts = [], midRightPts = [];
+      for (let k = 0; k <= SEGM; k++) {
+        const y = bodyTop + (midBot - bodyTop) * (k / SEGM);
+        // legLeft.right = Innenkante (rechte Seite) des linken Beins,
+        // legRight.left = Innenkante (linke Seite) des rechten Beins.
+        midLeftPts.push([edgeXAtY(legLeft.right, legLeft.topYs, legLeft.botYs, y) + gapMidLeg, y]);
+        midRightPts.push([edgeXAtY(legRight.left, legRight.topYs, legRight.botYs, y) - gapMidLeg, y]);
       }
+      fillBand(midLeftPts, midRightPts);
 
       // Name NICHT im Strichbild — unten links neben den Füßen, waagerecht
       // lesbar, im gewählten Schriftstil (klassisch/modern/Handschrift)
