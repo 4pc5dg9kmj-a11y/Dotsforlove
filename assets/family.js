@@ -454,40 +454,28 @@
     },
   };
 
-  /** Handgezeichnete Umkreisung als ECHTER Pinselzug: gefülltes Band mit
-      variabler Breite (dünner Ansatz/Auslauf, satt in der Mitte) über
-      der Ellipsenbahn, Radius-Modulation 1 + 0.03·sin(3t+φ) + 0.02·sin(7t)
-      + Zittern, Endüberlappung 0.5–0.9 rad, zwei leicht gedriftete Umläufe. */
-  function sketchOval(s, mx, my, rx, ry, ang, color, baseW, rnd) {
+  /** Handgezeichnete Umkreisung: dünne Polylinie über die Ellipsenbahn
+      mit Radius-Modulation 1 + 0.03·sin(3t+φ) + 0.02·sin(7t) + Zittern,
+      Endüberlappung 0.5–0.9 rad, zwei leicht gedriftete Umläufe. */
+  function sketchOval(s, mx, my, rx, ry, ang, color, lw, rnd) {
     for (let loop = 0; loop < 2; loop++) {
       const phi = rnd() * Math.PI * 2;
-      const p2 = rnd() * Math.PI * 2;
       const a0 = rnd() * Math.PI * 2;
       const overlap = 0.5 + rnd() * 0.4;             // 0.5–0.9 rad
-      const driftX = (rnd() - 0.5) * baseW * 0.6;
-      const driftY = (rnd() - 0.5) * baseW * 0.6;
-      const totalArc = Math.PI * 2 + overlap;
+      const driftX = (rnd() - 0.5) * lw * 1.2;
+      const driftY = (rnd() - 0.5) * lw * 1.2;
       const steps = 72;
-      const outer = [], inner = [];
+      const pts = [];
       for (let k = 0; k <= steps; k++) {
         const u = k / steps;
-        const a = a0 + u * totalArc;
+        const a = a0 + u * (Math.PI * 2 + overlap);
         const mod = 1 + 0.03 * Math.sin(3 * a + phi) + 0.02 * Math.sin(7 * a)
                   + (rnd() - 0.5) * 0.008;
-        // Pinselbreite: dünn ansetzen/auslaufen, satt in der Mitte
-        const endT = Math.min(1, Math.min(u / 0.08, (1 - u) / 0.1));
-        const wHere = baseW * (0.3 + 0.7 * endT) * (loop ? 0.72 : 1)
-                    * (0.88 + 0.16 * Math.sin(a * 5 + p2));
         const px0 = Math.cos(a) * rx * mod, py0 = Math.sin(a) * ry * mod;
-        let nx = Math.cos(a) * ry, ny = Math.sin(a) * rx;
-        const nl = Math.hypot(nx, ny) || 1;
-        nx = nx / nl * wHere / 2; ny = ny / nl * wHere / 2;
-        const rot = (px, py) => [mx + driftX + Math.cos(ang) * px - Math.sin(ang) * py,
-                                 my + driftY + Math.sin(ang) * px + Math.cos(ang) * py];
-        outer.push(rot(px0 + nx, py0 + ny));
-        inner.push(rot(px0 - nx, py0 - ny));
+        pts.push([mx + driftX + Math.cos(ang) * px0 - Math.sin(ang) * py0,
+                  my + driftY + Math.sin(ang) * px0 + Math.cos(ang) * py0]);
       }
-      s.polyline(outer.concat(inner.reverse()), { fill: color, close: true });
+      s.polyline(pts, { stroke: color, lw: loop ? lw * 0.8 : lw });
     }
   }
 
@@ -529,7 +517,7 @@
       const ry = 0.92 * cellH / 2;
       const ang = Math.atan2(y2 - y1, x2 - x1);
       const rr = rng('oval' + pi + p.word);
-      sketchOval(s, mx, my, rx, ry, ang, ST.circle, cell * 0.24, rr);
+      sketchOval(s, mx, my, rx, ry, ang, ST.circle, cell * 0.075, rr);
     });
 
     // Fußbereich: dünner Trennstrich, darunter Familienname FETT in der
