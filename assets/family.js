@@ -454,28 +454,40 @@
     },
   };
 
-  /** Handgezeichnete Umkreisung: Polylinie über die Ellipsenbahn mit
-      Radius-Modulation 1 + 0.03·sin(3t+φ) + 0.02·sin(7t) + Zittern,
-      Endüberlappung 0.5–0.9 rad, zwei leicht gedriftete Umläufe. */
-  function sketchOval(s, mx, my, rx, ry, ang, color, lw, rnd) {
+  /** Handgezeichnete Umkreisung als ECHTER Pinselzug: gefülltes Band mit
+      variabler Breite (dünner Ansatz/Auslauf, satt in der Mitte) über
+      der Ellipsenbahn, Radius-Modulation 1 + 0.03·sin(3t+φ) + 0.02·sin(7t)
+      + Zittern, Endüberlappung 0.5–0.9 rad, zwei leicht gedriftete Umläufe. */
+  function sketchOval(s, mx, my, rx, ry, ang, color, baseW, rnd) {
     for (let loop = 0; loop < 2; loop++) {
       const phi = rnd() * Math.PI * 2;
+      const p2 = rnd() * Math.PI * 2;
       const a0 = rnd() * Math.PI * 2;
       const overlap = 0.5 + rnd() * 0.4;             // 0.5–0.9 rad
-      const driftX = (rnd() - 0.5) * lw * 1.2;
-      const driftY = (rnd() - 0.5) * lw * 1.2;
+      const driftX = (rnd() - 0.5) * baseW * 0.6;
+      const driftY = (rnd() - 0.5) * baseW * 0.6;
+      const totalArc = Math.PI * 2 + overlap;
       const steps = 72;
-      const pts = [];
+      const outer = [], inner = [];
       for (let k = 0; k <= steps; k++) {
         const u = k / steps;
-        const a = a0 + u * (Math.PI * 2 + overlap);
+        const a = a0 + u * totalArc;
         const mod = 1 + 0.03 * Math.sin(3 * a + phi) + 0.02 * Math.sin(7 * a)
                   + (rnd() - 0.5) * 0.008;
+        // Pinselbreite: dünn ansetzen/auslaufen, satt in der Mitte
+        const endT = Math.min(1, Math.min(u / 0.08, (1 - u) / 0.1));
+        const wHere = baseW * (0.3 + 0.7 * endT) * (loop ? 0.72 : 1)
+                    * (0.88 + 0.16 * Math.sin(a * 5 + p2));
         const px0 = Math.cos(a) * rx * mod, py0 = Math.sin(a) * ry * mod;
-        pts.push([mx + driftX + Math.cos(ang) * px0 - Math.sin(ang) * py0,
-                  my + driftY + Math.sin(ang) * px0 + Math.cos(ang) * py0]);
+        let nx = Math.cos(a) * ry, ny = Math.sin(a) * rx;
+        const nl = Math.hypot(nx, ny) || 1;
+        nx = nx / nl * wHere / 2; ny = ny / nl * wHere / 2;
+        const rot = (px, py) => [mx + driftX + Math.cos(ang) * px - Math.sin(ang) * py,
+                                 my + driftY + Math.sin(ang) * px + Math.cos(ang) * py];
+        outer.push(rot(px0 + nx, py0 + ny));
+        inner.push(rot(px0 - nx, py0 - ny));
       }
-      s.polyline(pts, { stroke: color, lw: loop ? lw * 0.8 : lw });
+      s.polyline(outer.concat(inner.reverse()), { fill: color, close: true });
     }
   }
 
@@ -517,14 +529,16 @@
       const ry = 0.92 * cellH / 2;
       const ang = Math.atan2(y2 - y1, x2 - x1);
       const rr = rng('oval' + pi + p.word);
-      sketchOval(s, mx, my, rx, ry, ang, ST.circle, cell * 0.075, rr);
+      sketchOval(s, mx, my, rx, ry, ang, ST.circle, cell * 0.24, rr);
     });
 
-    // Fußbereich: Familienname FETT in der Stilschrift, darunter klein
-    // "since/seit [Gründungsjahr]" in gedämpftem Grau. Kein Markenname.
-    // EN: "the {Name} Family"  ·  DE: "Familie {Name}"
+    // Fußbereich: dünner Trennstrich, darunter Familienname FETT in der
+    // Stilschrift, darunter klein "since/seit [Gründungsjahr]" in
+    // gedämpftem Grau. Kein Markenname. EN: "the {Name} Family" · DE: "Familie {Name}"
     const founded = fam.founded || Math.min(...fam.members.map((m) => m.born.getFullYear()));
-    const ty = H - M - H * 0.045;
+    const fy = H - M - H * 0.058;
+    s.polyline([[W / 2 - W * 0.1, fy], [W / 2 + W * 0.1, fy]], { stroke: '#D8D3CB', lw: cell * 0.045 });
+    const ty = fy + W * 0.05;
     const title = familyTitleLabel(fam);
     const tSize = fitSize(title, W * 0.055, ST.titleFont, ST.titleWeight, 'normal', W - 2 * M);
     s.text(title, W / 2, ty, {
@@ -601,29 +615,34 @@
       const legBot = () => baseY - rnd() * figH * 0.02;
       const midBot = bodyTop + spanY * (0.55 + rnd() * 0.05);
       const strokes = [
-        { off: -2, bot: armBot(), w: 0.17 },   // Hand/Arm links (kurz)
-        { off: -1, bot: legBot(), w: 0.20 },   // Bein links (lang)
-        { off:  0, bot: midBot,   w: 0.18 },   // Mitte (kurz)
-        { off:  1, bot: legBot(), w: 0.20 },   // Bein rechts (lang)
-        { off:  2, bot: armBot(), w: 0.17 },   // Hand/Arm rechts (kurz)
+        { off: -2, bot: armBot(), w: 0.19 },   // Hand/Arm links (kurz)
+        { off: -1, bot: legBot(), w: 0.23 },   // Bein links (lang)
+        { off:  0, bot: midBot,   w: 0.205 },  // Mitte (kurz)
+        { off:  1, bot: legBot(), w: 0.23 },   // Bein rechts (lang)
+        { off:  2, bot: armBot(), w: 0.19 },   // Hand/Arm rechts (kurz)
       ];
       for (const st of strokes) {
-        const off = st.off * figW * 0.195;     // Abstand knapp > Strichbreite → schmalere Lücke
+        const off = st.off * figW * 0.225;     // Abstand knapp > Strichbreite → schmale Lücke
         const wTop = figW * (st.w + rnd() * 0.015);
         const wBot = wTop * (0.6 + rnd() * 0.15);
         const bend = bodyBend * (st.off === 0 ? 0.6 : 1) + (rnd() - 0.5) * figW * 0.04;
         brushStroke(cx, off, wTop, wBot, bodyTop, st.bot, bend);
       }
 
-      // Name handschriftlich, vertikal auf dem Mittelstrich
-      const midW = figW * 0.14;
-      const nmSize = fitSize(m.name, Math.min(W * 0.03, midW * 0.85), FONTS.hand, 600, 'italic', (midBot - bodyTop) * 0.9);
-      s.text(m.name, cx + bodyBend * 0.6 + nmSize * 0.08, bodyTop + (midBot - bodyTop) * 0.52,
-        { size: nmSize, family: FONTS.hand, weight: 600, style: 'italic', fill: BG, align: 'center', rotate: -Math.PI / 2 });
+      // Name NICHT im Strichbild — handschriftlich unten links neben den
+      // Füßen, waagerecht lesbar
+      const nmSize = Math.min(W * 0.026, figW * 0.36);
+      s.text(m.name, cx - figW * 0.52, baseY + nmSize * 1.25,
+        { size: nmSize, family: FONTS.hand, weight: 600, style: 'italic',
+          fill: 'rgba(20,20,20,.68)', align: 'left' });
     });
 
-    s.text(familyTitleLabel(fam), W / 2, H - H * 0.034,
-      { size: W * 0.03, family: FONTS.hand, style: 'italic', fill: 'rgba(20,20,20,.5)', align: 'center' });
+    // Fußbereich: dünner Trennstrich, darunter Familienname (DE/EN)
+    const footY = H - H * 0.058;
+    s.polyline([[W / 2 - W * 0.09, footY], [W / 2 + W * 0.09, footY]],
+      { stroke: 'rgba(20,20,20,.3)', lw: W * 0.0035 });
+    s.text(familyTitleLabel(fam), W / 2, H - H * 0.028,
+      { size: W * 0.03, family: FONTS.hand, style: 'italic', fill: 'rgba(20,20,20,.55)', align: 'center' });
   }
 
   const PAINTERS = {
