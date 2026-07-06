@@ -570,14 +570,16 @@
     const rnd = rng('fig:' + fam.name + n);
 
     const baseY0 = H - M - H * 0.02;
-    const maxFigH = H - 2 * M - H * 0.05;
+    const maxFigH = (H - 2 * M - H * 0.05) * 0.86;  // etwas kürzere Figuren
     // Dichte Staffelung: Figuren rücken zusammen und überlappen leicht
     const clusterW = Math.min(W - 2 * M, W * 0.09 * n + W * 0.28);
     const slot = clusterW / Math.max(1, n - 0.3);
     const startX = (W - clusterW) / 2 + slot * 0.35;
 
-    /** Ein Pinselstrich: leichte Kantenunruhe, Verjüngung, dezenter Schwung. */
-    function brushStroke(cx, off, wTop, wBot, topYs, botYs, bend) {
+    /** Ein Pinselstrich: leichte Kantenunruhe, Verjüngung, dezenter Schwung.
+        jitterScale dämpft Kantenrauschen (z.B. für den ruhigeren Mittelstrich). */
+    function brushStroke(cx, off, wTop, wBot, topYs, botYs, bend, jitterScale) {
+      const js = jitterScale === undefined ? 1 : jitterScale;
       const SEG = 7;
       const left = [], right = [];
       for (let k = 0; k <= SEG; k++) {
@@ -585,8 +587,8 @@
         const y = topYs + (botYs - topYs) * t;
         const wHere = wTop + (wBot - wTop) * t;
         const sway = bend * Math.sin(t * Math.PI);
-        const jL = (rnd() - 0.5) * wHere * 0.07;
-        const jR = (rnd() - 0.5) * wHere * 0.07;
+        const jL = (rnd() - 0.5) * wHere * 0.07 * js;
+        const jR = (rnd() - 0.5) * wHere * 0.07 * js;
         left.push([cx + off + sway - wHere / 2 + jL, y]);
         right.push([cx + off + sway + wHere / 2 + jR, y]);
       }
@@ -623,11 +625,16 @@
         { off:  2, bot: armBot(), w: 0.19 },   // Hand/Arm rechts (kurz)
       ];
       for (const st of strokes) {
+        const isMid = st.off === 0;
         const off = st.off * figW * 0.225;     // Abstand knapp > Strichbreite → schmale Lücke
         const wTop = figW * (st.w + rnd() * 0.015);
         const wBot = wTop * (0.6 + rnd() * 0.15);
-        const bend = bodyBend * (st.off === 0 ? 0.6 : 1) + (rnd() - 0.5) * figW * 0.04;
-        brushStroke(cx, off, wTop, wBot, bodyTop, st.bot, bend);
+        // Mittelstrich bewusst gerader/gleichmäßiger halten, damit die
+        // Lücke zu den Beinen links/rechts nicht einseitig größer wird
+        const bend = isMid
+          ? bodyBend * 0.15 + (rnd() - 0.5) * figW * 0.012
+          : bodyBend + (rnd() - 0.5) * figW * 0.04;
+        brushStroke(cx, off, wTop, wBot, bodyTop, st.bot, bend, isMid ? 0.35 : 1);
       }
 
       // Name NICHT im Strichbild — unten links neben den Füßen, waagerecht
