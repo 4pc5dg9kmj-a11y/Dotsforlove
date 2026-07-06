@@ -608,33 +608,45 @@
       wobblyEllipse(s, cx + (rnd() - 0.5) * figW * 0.1, topY + headR,
         headR, headR * (1.05 + rnd() * 0.2), (rnd() - 0.5) * 0.35, { fill: FIG }, rnd);
 
-      // Immer 5 Striche MIT sichtbarer Lücke dazwischen:
-      // außen kurz (Hände/Arme), daneben lang (Beine), Mitte kurz.
-      // Striche ruhig gehalten: wenig Schwung, kaum Kantenrauschen.
+      // Immer 5 Striche mit schmaler, gleichmäßiger Lücke dazwischen:
+      // außen kurz (Hände/Arme), daneben lang (Beine), Mitte kurz und
+      // exakt mittig. Der Mittelstrich-Abstand zu den Beinen ist bewusst
+      // enger als der Bein-Arm-Abstand — beide Seiten symmetrisch gleich.
       const bodyTop = topY + headR * (1.85 + rnd() * 0.2);
-      const bodyBend = (rnd() - 0.5) * figW * 0.12;          // dezenter Schwung
       const spanY = baseY - bodyTop;
       const armBot = () => bodyTop + spanY * (0.42 + rnd() * 0.06);
       const legBot = () => baseY - rnd() * figH * 0.02;
       const midBot = bodyTop + spanY * (0.55 + rnd() * 0.05);
+
+      const wArm = 0.19, wLeg = 0.23, wMid = 0.205;
+      const gapMidLeg = figW * 0.02;    // schmale Lücke Mitte↔Bein
+      const gapLegArm = figW * 0.035;   // etwas größere Lücke Bein↔Arm
+      const legOff = figW * (wMid + wLeg) / 2 + gapMidLeg;
+      const armOff = legOff + figW * (wLeg + wArm) / 2 + gapLegArm;
+
       const strokes = [
-        { off: -2, bot: armBot(), w: 0.19 },   // Hand/Arm links (kurz)
-        { off: -1, bot: legBot(), w: 0.23 },   // Bein links (lang)
-        { off:  0, bot: midBot,   w: 0.205 },  // Mitte (kurz)
-        { off:  1, bot: legBot(), w: 0.23 },   // Bein rechts (lang)
-        { off:  2, bot: armBot(), w: 0.19 },   // Hand/Arm rechts (kurz)
+        { off: -armOff, bot: armBot(), w: wArm, type: 'arm', side: -1 },
+        { off: -legOff, bot: legBot(), w: wLeg, type: 'leg', side: -1 },
+        { off:  0,       bot: midBot,   w: wMid, type: 'mid', side:  0 },
+        { off:  legOff,  bot: legBot(), w: wLeg, type: 'leg', side:  1 },
+        { off:  armOff,  bot: armBot(), w: wArm, type: 'arm', side:  1 },
       ];
+      // Beine (und Arme) spiegelsymmetrisch schwingen lassen — ein
+      // gemeinsamer Wert pro Paar, links/rechts gespiegelt — so bleibt
+      // die Lücke zur Mitte auf beiden Seiten gleich breit, statt
+      // unabhängig zu variieren.
+      const legBend = (rnd() - 0.5) * figW * 0.05;
+      const armBend = (rnd() - 0.5) * figW * 0.05;
       for (const st of strokes) {
-        const isMid = st.off === 0;
-        const off = st.off * figW * 0.225;     // Abstand knapp > Strichbreite → schmale Lücke
         const wTop = figW * (st.w + rnd() * 0.015);
         const wBot = wTop * (0.6 + rnd() * 0.15);
-        // Mittelstrich bewusst gerader/gleichmäßiger halten, damit die
-        // Lücke zu den Beinen links/rechts nicht einseitig größer wird
-        const bend = isMid
-          ? bodyBend * 0.15 + (rnd() - 0.5) * figW * 0.012
-          : bodyBend + (rnd() - 0.5) * figW * 0.04;
-        brushStroke(cx, off, wTop, wBot, bodyTop, st.bot, bend, isMid ? 0.35 : 1);
+        // Mittelstrich exakt gerade & mittig; Beine gespiegelt (gleicher
+        // Betrag beidseits); Arme dürfen etwas freier schwingen.
+        const bend = st.type === 'mid' ? 0
+          : st.type === 'leg' ? legBend * st.side
+          : armBend * st.side;
+        const jitter = st.type === 'mid' ? 0.2 : st.type === 'leg' ? 0.6 : 1;
+        brushStroke(cx, st.off, wTop, wBot, bodyTop, st.bot, bend, jitter);
       }
 
       // Name NICHT im Strichbild — unten links neben den Füßen, waagerecht
