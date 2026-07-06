@@ -520,12 +520,12 @@
       sketchOval(s, mx, my, rx, ry, ang, ST.circle, cell * 0.075, rr);
     });
 
-    // Fußbereich: dünner Trennstrich, darunter Familienname FETT in der
-    // Stilschrift, darunter klein "since/seit [Gründungsjahr]" in
-    // gedämpftem Grau. Kein Markenname. EN: "the {Name} Family" · DE: "Familie {Name}"
+    // Fußbereich: dünner schwarzer Trennstrich, darunter Familienname
+    // FETT in der Stilschrift, darunter klein "since/seit [Gründungsjahr]"
+    // ebenfalls schwarz. Kein Markenname. EN: "the {Name} Family" · DE: "Familie {Name}"
     const founded = fam.founded || Math.min(...fam.members.map((m) => m.born.getFullYear()));
     const fy = H - M - H * 0.058;
-    s.polyline([[W / 2 - W * 0.1, fy], [W / 2 + W * 0.1, fy]], { stroke: '#D8D3CB', lw: cell * 0.045 });
+    s.polyline([[W / 2 - W * 0.1, fy], [W / 2 + W * 0.1, fy]], { stroke: '#1A1A1A', lw: cell * 0.045 });
     const ty = fy + W * 0.05;
     const title = familyTitleLabel(fam);
     const tSize = fitSize(title, W * 0.055, ST.titleFont, ST.titleWeight, 'normal', W - 2 * M);
@@ -535,7 +535,7 @@
     });
     s.text(sinceLabel(fam, founded), W / 2, ty + W * 0.038, {
       size: W * 0.024, family: ST.sinceFont, weight: ST.sinceWeight,
-      style: ST.sinceStyle, fill: '#8C847C', align: 'center',
+      style: ST.sinceStyle, fill: '#1A1A1A', align: 'center',
     });
   }
 
