@@ -542,10 +542,23 @@
   /* ══ Painter · figuren ══
      Referenztreue: organische, sich verjüngende Pinselstriche mit rauen
      Kanten und ungleich langen Enden; Kopf als unregelmäßiger Klecks;
-     Figuren dicht gestaffelt mit leichter Überlappung statt Reihe. */
+     Figuren dicht gestaffelt mit leichter Überlappung statt Reihe.
+     Namen & Fußzeile in wählbarem Schriftstil (klassisch/modern/
+     Handschrift), analog zu den Word-Search-Stilen. */
+  const FIGURE_LETTER_STYLES = {
+    classic: { font: FONTS.lora, weight: 500, style: 'italic' },
+    modern:  { font: FONTS.poppins, weight: 600, style: 'normal' },
+    hand:    { font: FONTS.hand, weight: 600, style: 'italic' },
+  };
+
   function paintFiguren(s, fam, opts) {
     const W = s.W, H = s.H, M = W * 0.12;
+    // Kurze Seite als Referenz für Schriftgrößen/Abstände, damit Fußzeile
+    // & Namen auch im Querformat proportional bleiben (nicht an W hängen,
+    // das im Querformat groß, aber der verfügbare Platz an H, klein ist).
+    const S = Math.min(W, H);
     const FIG = opts.accent2 || '#141414', BG = '#F2EBDD';
+    const LS = FIGURE_LETTER_STYLES[opts.figureLetterStyle] || FIGURE_LETTER_STYLES.hand;
     s.rect(0, 0, W, H, BG);
 
     const now = new Date();
@@ -617,20 +630,22 @@
         brushStroke(cx, off, wTop, wBot, bodyTop, st.bot, bend);
       }
 
-      // Name NICHT im Strichbild — handschriftlich unten links neben den
-      // Füßen, waagerecht lesbar
-      const nmSize = Math.min(W * 0.026, figW * 0.36);
+      // Name NICHT im Strichbild — unten links neben den Füßen, waagerecht
+      // lesbar, im gewählten Schriftstil (klassisch/modern/Handschrift)
+      const nmSize = Math.min(S * 0.026, figW * 0.36);
       s.text(m.name, cx - figW * 0.52, baseY + nmSize * 1.25,
-        { size: nmSize, family: FONTS.hand, weight: 600, style: 'italic',
+        { size: nmSize, family: LS.font, weight: LS.weight, style: LS.style,
           fill: 'rgba(20,20,20,.68)', align: 'left' });
     });
 
-    // Fußbereich: dünner Trennstrich, darunter Familienname (DE/EN)
+    // Fußbereich: dünner Trennstrich, darunter Familienname (DE/EN),
+    // ebenfalls im gewählten Schriftstil. Schriftgröße & Abstand an der
+    // kurzen Seite (S) ausgerichtet, damit es im Querformat nicht kollidiert.
     const footY = H - H * 0.058;
     s.polyline([[W / 2 - W * 0.09, footY], [W / 2 + W * 0.09, footY]],
-      { stroke: 'rgba(20,20,20,.3)', lw: W * 0.0035 });
+      { stroke: 'rgba(20,20,20,.3)', lw: S * 0.0035 });
     s.text(familyTitleLabel(fam), W / 2, H - H * 0.028,
-      { size: W * 0.03, family: FONTS.hand, style: 'italic', fill: 'rgba(20,20,20,.55)', align: 'center' });
+      { size: S * 0.03, family: LS.font, weight: LS.weight, style: LS.style, fill: 'rgba(20,20,20,.55)', align: 'center' });
   }
 
   const PAINTERS = {
@@ -650,6 +665,8 @@
       this.accent = '#2B3FCB';   // Smiley-Farbe
       this.accent2 = '#141414';  // Figuren-Farbe
       this.accent3 = '#E8495A';  // Rätsel-Pinsel-Farbe (einheitlicher Zeichnungslook)
+      this.orientation = 'portrait';   // nur beim Strichbild (Figuren) wirksam
+      this.figureLetterStyle = 'hand'; // 'classic' | 'modern' | 'hand' — Namen & Fußzeile bei Figuren
       this.family = {
         name: 'Weber',
         city: '',
@@ -663,7 +680,15 @@
         ],
       };
     }
-    dims() { return SIZES[this.size] || SIZES.A3; }
+    dims() {
+      const d = SIZES[this.size] || SIZES.A3;
+      // Hoch-/Querformat gilt bewusst nur beim Strichbild (Figuren) —
+      // die anderen Motive sind fürs Hochformat komponiert.
+      if (this.variant === 'figuren' && this.orientation === 'landscape') {
+        return { w: d.h, h: d.w, label: d.label };
+      }
+      return d;
+    }
     price() {
       const injected = window.DotsForLovePrices || {};
       return parseFloat(injected[this.size]) || FALLBACK_PRICES[this.size] || 0;
@@ -685,7 +710,10 @@
       };
     }
     _opts() {
-      return { accent: this.accent, accent2: this.accent2, accent3: this.accent3 };
+      return {
+        accent: this.accent, accent2: this.accent2, accent3: this.accent3,
+        figureLetterStyle: this.figureLetterStyle,
+      };
     }
     renderPreview(canvas) {
       const { w, h } = this.dims();
@@ -710,6 +738,10 @@
         'Format': SIZES[this.size].label,
         'Akzentfarbe': this.variant === 'smiley' ? this.accent
           : this.variant === 'figuren' ? this.accent2 : '—',
+        'Ausrichtung': this.variant === 'figuren'
+          ? (this.orientation === 'landscape' ? 'Querformat' : 'Hochformat') : '—',
+        'Schriftstil': this.variant === 'figuren'
+          ? ({ classic: 'Klassisch', modern: 'Modern', hand: 'Handschrift' })[this.figureLetterStyle] : '—',
       };
     }
   }
@@ -742,8 +774,12 @@
     }
     function updateAccentVisibility() {
       const smiley = $('accentRowSmiley'), fig = $('accentRowFiguren');
+      const orient = $('orientRowFiguren'), letter = $('letterRowFiguren');
+      const isFiguren = gen.variant === 'figuren';
       if (smiley) smiley.hidden = gen.variant !== 'smiley';
-      if (fig) fig.hidden = gen.variant !== 'figuren';
+      if (fig) fig.hidden = !isFiguren;
+      if (orient) orient.hidden = !isFiguren;
+      if (letter) letter.hidden = !isFiguren;
     }
 
     /* Familie */
@@ -800,6 +836,26 @@
     $('famAccent')?.addEventListener('input', (e) => { gen.accent = e.target.value; rerender(); });
     $('famAccent2')?.addEventListener('input', (e) => { gen.accent2 = e.target.value; rerender(); });
     $('famAccent3')?.addEventListener('input', (e) => { gen.accent3 = e.target.value; rerender(); });
+
+    /* Ausrichtung (nur Strichbild/Figuren) */
+    document.querySelectorAll('.fam-orient').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.fam-orient').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        gen.orientation = btn.dataset.orient;
+        rerender();
+      });
+    });
+
+    /* Schriftstil der Namen & Fußzeile (nur Strichbild/Figuren) */
+    document.querySelectorAll('.fam-letterstyle').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.fam-letterstyle').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        gen.figureLetterStyle = btn.dataset.letterstyle;
+        rerender();
+      });
+    });
 
     /* Format */
     document.querySelectorAll('.fam-size').forEach((btn) => {

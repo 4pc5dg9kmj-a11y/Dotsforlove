@@ -45,6 +45,8 @@
       font-family: inherit; font-size: .82rem; font-weight: 600; cursor: pointer; transition: .2s; }
     .fam-lang small { display: block; font-weight: 400; color: #999; font-size: .7rem; }
     .fam-lang.active, .fam-lang:hover { border-color: #E8495A; color: #E8495A; background: #FDF0F1; }
+  .fam-orient-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
+  .fam-letter-toggle { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 6px; }
     .fam-sizes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
     .fam-size { padding: 10px 6px; border: 2px solid #E5E2DC; border-radius: 10px; background: #fff;
       font-family: inherit; font-size: .84rem; font-weight: 700; cursor: pointer; transition: .2s; }
@@ -112,6 +114,15 @@
         <div class="fam-color-row" id="accentRowFiguren" hidden>
           <input type="color" id="famAccent2" value="#141414" aria-label="Figuren-Farbe" />
           <span>Farbe der Figuren</span>
+        </div>
+        <div class="fam-orient-toggle" id="orientRowFiguren" hidden>
+          <button type="button" class="fam-size fam-orient active" data-orient="portrait">Hochformat</button>
+          <button type="button" class="fam-size fam-orient" data-orient="landscape">Querformat</button>
+        </div>
+        <div class="fam-letter-toggle" id="letterRowFiguren" hidden>
+          <button type="button" class="fam-size fam-letterstyle" data-letterstyle="classic">Klassisch</button>
+          <button type="button" class="fam-size fam-letterstyle" data-letterstyle="modern">Modern</button>
+          <button type="button" class="fam-size fam-letterstyle active" data-letterstyle="hand">Handschrift</button>
         </div>
 
         <div class="fam-step">3 · Format</div>
