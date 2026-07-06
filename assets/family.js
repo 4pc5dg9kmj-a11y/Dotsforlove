@@ -579,10 +579,11 @@
     /** Kantenpunkte eines Pinselstrichs berechnen (ohne zu zeichnen):
         leichte Kantenunruhe, Verjüngung, dezenter Schwung — bleibt
         unangetastet für Arme & Beine, die ihre Unregelmäßigkeit behalten.
-        hipAmt (nur bei Frauen-Figuren > 0) fügt oben, um die Hüfte
-        herum, einen sanften nach außen gerichteten Schwung ein, der
-        Richtung Fuß wieder ausläuft. */
-    function strokeEdges(cx, off, wTop, wBot, topYs, botYs, bend, hipAmt) {
+        swingAmt (nur bei Frauen-Figuren > 0) fügt einen sanften, nach
+        außen gerichteten Schwung ein, der nahe einem Strich-Ende
+        (swingAnchor: 'top' oder 'bottom') konzentriert ist und zu
+        beiden Seiten hin wieder ausläuft. */
+    function strokeEdges(cx, off, wTop, wBot, topYs, botYs, bend, swingAmt, swingAnchor) {
       const SEG = 7;
       const left = [], right = [];
       const sign = off < 0 ? -1 : 1;
@@ -590,8 +591,9 @@
         const t = k / SEG;
         const y = topYs + (botYs - topYs) * t;
         const wHere = wTop + (wBot - wTop) * t;
-        const hip = hipAmt ? sign * hipAmt * Math.sin(Math.min(t / 0.4, 1) * Math.PI) : 0;
-        const sway = bend * Math.sin(t * Math.PI) + hip;
+        const tt = swingAnchor === 'bottom' ? (1 - t) : t;
+        const swing = swingAmt ? sign * swingAmt * Math.sin(Math.min(tt / 0.35, 1) * Math.PI) : 0;
+        const sway = bend * Math.sin(t * Math.PI) + swing;
         const jL = (rnd() - 0.5) * wHere * 0.07;
         const jR = (rnd() - 0.5) * wHere * 0.07;
         left.push([cx + off + sway - wHere / 2 + jL, y]);
@@ -616,11 +618,12 @@
       wobblyEllipse(s, cx + (rnd() - 0.5) * figW * 0.1, topY + headR,
         headR, headR * (1.05 + rnd() * 0.2), (rnd() - 0.5) * 0.35, { fill: FIG }, rnd);
 
-      // 4 Striche: außen kurz (Arme), innen lang (Beine) — kein Mittelstrich.
-      // Arme & Beine behalten ihre organische Unregelmäßigkeit (eigener
-      // Schwung/Kantenrauschen). Die Beine sind oben etwas breiter und
-      // verjüngen sich nach unten deutlicher als die Arme; bei weiblichen
-      // Figuren bekommt der Hüftbereich zusätzlich etwas Schwung nach außen.
+      // 4 Striche: außen kurz (Arme), innen lang (Beine) — kein Mittelstrich,
+      // eng beieinander. Arme & Beine behalten ihre organische Unregel-
+      // mäßigkeit (eigener Schwung/Kantenrauschen). Die Beine sind oben
+      // etwas breiter und verjüngen sich nach unten deutlicher als die
+      // Arme; bei weiblichen Figuren bekommen die Arme zusätzlich am
+      // Ende (Hände) einen sanften Schwung nach außen.
       const bodyTop = topY + headR * (1.85 + rnd() * 0.2);
       const bodyBend = (rnd() - 0.5) * figW * 0.12;          // dezenter Schwung
       const spanY = baseY - bodyTop;
@@ -628,10 +631,10 @@
       const legBot = () => baseY - rnd() * figH * 0.02;
 
       const wArm = 0.19, wLeg = 0.27;
-      const gapLegLeg = figW * 0.075;  // Lücke zwischen den beiden Beinen
-      const gapLegArm = figW * 0.035;  // Lücke Bein↔Arm
+      const gapLegLeg = figW * 0.03;   // Lücke zwischen den beiden Beinen
+      const gapLegArm = figW * 0.018;  // Lücke Bein↔Arm
       const isFemale = m.gender === 'w';
-      const hipAmt = isFemale ? figW * (0.055 + rnd() * 0.02) : 0;
+      const swingAmt = isFemale ? figW * (0.05 + rnd() * 0.02) : 0;
 
       const mkBend = () => bodyBend + (rnd() - 0.5) * figW * 0.04;
       const legWTop = figW * (wLeg + rnd() * 0.015), legWBot = legWTop * (0.42 + rnd() * 0.12);
@@ -640,31 +643,32 @@
       const legOff = legWTop / 2 + gapLegLeg / 2;
       const armOff = legOff + figW * (wLeg + wArm) / 2 + gapLegArm;
 
-      const legLeft  = strokeEdges(cx, -legOff, legWTop, legWBot, bodyTop, legBot(), mkBend(), hipAmt);
-      const legRight = strokeEdges(cx,  legOff, legWTop, legWBot, bodyTop, legBot(), mkBend(), hipAmt);
-      const armLeft  = strokeEdges(cx, -armOff, armWTopL, armWBotL, bodyTop, armBot(), mkBend());
-      const armRight = strokeEdges(cx,  armOff, armWTopR, armWBotR, bodyTop, armBot(), mkBend());
+      const legLeft  = strokeEdges(cx, -legOff, legWTop, legWBot, bodyTop, legBot(), mkBend());
+      const legRight = strokeEdges(cx,  legOff, legWTop, legWBot, bodyTop, legBot(), mkBend());
+      const armLeft  = strokeEdges(cx, -armOff, armWTopL, armWBotL, bodyTop, armBot(), mkBend(), swingAmt, 'bottom');
+      const armRight = strokeEdges(cx,  armOff, armWTopR, armWBotR, bodyTop, armBot(), mkBend(), swingAmt, 'bottom');
       fillBand(legLeft.left, legLeft.right);
       fillBand(legRight.left, legRight.right);
       fillBand(armLeft.left, armLeft.right);
       fillBand(armRight.left, armRight.right);
 
-      // Name NICHT im Strichbild — unten links neben den Füßen, waagerecht
-      // lesbar, im gewählten Schriftstil (klassisch/modern/Handschrift)
+      // Name NICHT im Strichbild — direkt unter der Figur, zentriert,
+      // im gewählten Schriftstil (klassisch/modern/Handschrift), schwarz
       const nmSize = Math.min(S * 0.026, figW * 0.36);
-      s.text(m.name, cx - figW * 0.52, baseY + nmSize * 1.25,
+      s.text(m.name, cx, baseY + nmSize * 1.25,
         { size: nmSize, family: LS.font, weight: LS.weight, style: LS.style,
-          fill: 'rgba(20,20,20,.68)', align: 'left' });
+          fill: '#1A1A1A', align: 'center' });
     });
 
     // Fußbereich: dünner Trennstrich, darunter Familienname (DE/EN),
-    // ebenfalls im gewählten Schriftstil. Schriftgröße & Abstand an der
-    // kurzen Seite (S) ausgerichtet, damit es im Querformat nicht kollidiert.
+    // ebenfalls im gewählten Schriftstil, schwarz. Schriftgröße & Abstand
+    // an der kurzen Seite (S) ausgerichtet, damit es im Querformat nicht
+    // kollidiert.
     const footY = H - H * 0.058;
     s.polyline([[W / 2 - W * 0.09, footY], [W / 2 + W * 0.09, footY]],
-      { stroke: 'rgba(20,20,20,.3)', lw: S * 0.0035 });
+      { stroke: '#1A1A1A', lw: S * 0.0035 });
     s.text(familyTitleLabel(fam), W / 2, H - H * 0.028,
-      { size: S * 0.03, family: LS.font, weight: LS.weight, style: LS.style, fill: 'rgba(20,20,20,.55)', align: 'center' });
+      { size: S * 0.03, family: LS.font, weight: LS.weight, style: LS.style, fill: '#1A1A1A', align: 'center' });
   }
 
   const PAINTERS = {
