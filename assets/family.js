@@ -39,16 +39,20 @@
     didot:   '"Playfair Display", "Didot", Georgia, "Times New Roman", serif',
     sans:    '"Helvetica Neue", Helvetica, Arial, sans-serif',
     hand:    '"Caveat", "Segoe Script", "Bradley Hand", "Comic Sans MS", cursive',
+    poppins: '"Poppins", "DM Sans", "Helvetica Neue", Arial, sans-serif',
+    lora:    '"Lora", Georgia, "Times New Roman", serif',
+    marker:  '"Permanent Marker", "Caveat", "Comic Sans MS", cursive',
   };
 
   const NAME_PALETTE = ['#E8495A', '#845EC2', '#00C9A7', '#F9B233', '#4D9DE0', '#F28C50', '#9BC53D', '#C86FC9'];
 
   const VARIANTS = {
-    'smiley':         { label: 'Smiley-Grid' },
-    'jahre':          { label: 'Jahreszahlen' },
-    'raetsel-modern': { label: 'Namensrätsel · Modern' },
-    'raetsel-pinsel': { label: 'Namensrätsel · Pinsel' },
-    'figuren':        { label: 'Figuren nach Alter' },
+    'smiley':          { label: 'Smiley-Grid' },
+    'jahre':           { label: 'Jahreszahlen' },
+    'raetsel-modern':  { label: 'Family Word Search · Modern' },
+    'raetsel-classic': { label: 'Family Word Search · Classic' },
+    'raetsel-hand':    { label: 'Family Word Search · Handwriting' },
+    'figuren':         { label: 'Figuren nach Alter' },
   };
 
   /* ── deterministischer Zufall: gleiche Familie → gleiches Poster ── */
@@ -363,13 +367,15 @@
     }
   }
 
-  /* ══ Rätsel-Generator ══ */
+  /* ══ Rätsel-Generator ══
+     Standard 9×11 Zellen, wächst dynamisch mit Namenslänge/-anzahl.
+     Kreuzungen auf gemeinsamen Buchstaben sind erlaubt. */
   function buildPuzzle(names, seed) {
     const rnd = rng('puzzle:' + seed + names.join());
     const clean = names.map((s2) => s2.toUpperCase().replace(/[^A-ZÄÖÜ]/g, '')).filter(Boolean);
     const longest = Math.max(...clean.map((s2) => s2.length), 4);
-    const cols = Math.max(11, longest + 2);
-    const rows = Math.max(13, clean.length * 3 + 3);
+    const cols = Math.max(9, longest + 2);
+    const rows = Math.max(11, longest + 2, clean.length * 2 + 3);
     const grid = Array.from({ length: rows }, () => Array(cols).fill(null));
     const placements = [];
     let wi = 0;
@@ -406,87 +412,112 @@
     return { grid, placements, rows, cols };
   }
 
-  /* ══ Painter · raetsel (modern | pinsel) ══
-     modern: wie das Referenzposter — helle Buchstaben, Namen dunkel/fett.
-     pinsel: ALLES einheitlich in EINER Wahlfarbe als Zeichnungseffekt —
-             Handschrift-Buchstaben mit leichtem Kippeln, Namen mit
-             handgemalter Linie eingekreist, Fußzeile in derselben Farbe. */
-  function paintRaetsel(s, fam, style, opts) {
-    const W = s.W, H = s.H, M = W * 0.097;
+  /* ══ Painter · Family Word Search (modern | classic | hand) ══
+     Drei Stil-Varianten mit festen Kreisfarben; Umkreisung hand-
+     gezeichnet (Radius-Modulation + Zittern, Endüberlappung, zwei
+     leicht gedriftete Umläufe). Unten Familienname fett + „since
+     [Gründungsjahr]" — kein Markenname auf dem Poster. */
+  const WS_STYLES = {
+    modern: {
+      letterFont: FONTS.poppins, letterWeight: 500, jitter: false,
+      circle: '#C1664A',
+      titleFont: FONTS.poppins, titleWeight: 700, titleStroke: 0,
+      sinceFont: FONTS.poppins, sinceWeight: 300, sinceStyle: 'normal',
+    },
+    classic: {
+      letterFont: FONTS.lora, letterWeight: 500, jitter: false,
+      circle: '#7E3A3A',
+      titleFont: FONTS.lora, titleWeight: 700, titleStroke: 0,
+      sinceFont: FONTS.lora, sinceWeight: 400, sinceStyle: 'italic',
+    },
+    hand: {
+      letterFont: FONTS.marker, letterWeight: 400, jitter: true,
+      circle: '#B22228',
+      titleFont: FONTS.marker, titleWeight: 400, titleStroke: 0.02,
+      sinceFont: FONTS.hand, sinceWeight: 400, sinceStyle: 'normal',
+    },
+  };
+
+  /** Handgezeichnete Umkreisung: Polylinie über die Ellipsenbahn mit
+      Radius-Modulation 1 + 0.03·sin(3t+φ) + 0.02·sin(7t) + Zittern,
+      Endüberlappung 0.5–0.9 rad, zwei leicht gedriftete Umläufe. */
+  function sketchOval(s, mx, my, rx, ry, ang, color, lw, rnd) {
+    for (let loop = 0; loop < 2; loop++) {
+      const phi = rnd() * Math.PI * 2;
+      const a0 = rnd() * Math.PI * 2;
+      const overlap = 0.5 + rnd() * 0.4;             // 0.5–0.9 rad
+      const driftX = (rnd() - 0.5) * lw * 1.2;
+      const driftY = (rnd() - 0.5) * lw * 1.2;
+      const steps = 72;
+      const pts = [];
+      for (let k = 0; k <= steps; k++) {
+        const u = k / steps;
+        const a = a0 + u * (Math.PI * 2 + overlap);
+        const mod = 1 + 0.03 * Math.sin(3 * a + phi) + 0.02 * Math.sin(7 * a)
+                  + (rnd() - 0.5) * 0.008;
+        const px0 = Math.cos(a) * rx * mod, py0 = Math.sin(a) * ry * mod;
+        pts.push([mx + driftX + Math.cos(ang) * px0 - Math.sin(ang) * py0,
+                  my + driftY + Math.sin(ang) * px0 + Math.cos(ang) * py0]);
+      }
+      s.polyline(pts, { stroke: color, lw: loop ? lw * 0.8 : lw });
+    }
+  }
+
+  function paintRaetsel(s, fam, style) {
+    const ST = WS_STYLES[style] || WS_STYLES.modern;
+    const W = s.W, H = s.H, M = W * 0.1;
     s.rect(0, 0, W, H, '#FFFFFF');
     const { grid, placements, rows, cols } = buildPuzzle(fam.members.map((m) => m.name), fam.name);
-    const ACC = (opts && opts.accent3) || '#E8495A';
-    const inkMain = style === 'pinsel' ? ACC : '#1A1A1A';
 
-    const areaH = H - 2 * M - H * 0.12;
+    // Rasterfläche; unten Platz für Titel + „since"
+    const areaH = H - 2 * M - H * 0.13;
     const cell = Math.min((W - 2 * M) / cols, areaH / rows);
+    const cellW = cell, cellH = cell;
     const gx = (W - cell * cols) / 2, gy = M + (areaH - cell * rows) / 2;
-    const inWord = new Set();
-    placements.forEach((p) => p.cells.forEach(([r, c]) => inWord.add(r + ':' + c)));
 
+    const rndJ = rng('jitter:' + fam.name + style);
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        const hit = inWord.has(r + ':' + c);
-        const o = style === 'pinsel'
-          // Dicke, moderne Buchstaben sauber im Raster —
-          // der Pinsel-Effekt kommt allein von den Einkreisungen
-          ? { size: cell * 0.46, family: FONTS.sans, weight: 800, fill: '#2A2A2A' }
-          : { size: cell * 0.42, family: FONTS.sans, weight: hit ? 700 : 300, fill: hit ? '#111111' : '#BFBFBF' };
-        s.text(grid[r][c], gx + (c + 0.5) * cell, gy + (r + 0.5) * cell + o.size * 0.35,
-          { ...o, align: 'center' });
+        const o = { size: cell * 0.42, family: ST.letterFont, weight: ST.letterWeight, fill: '#2A2A2A', align: 'center' };
+        let x = gx + (c + 0.5) * cell, y = gy + (r + 0.5) * cell + o.size * 0.35;
+        if (ST.jitter) {
+          // Handwriting: pro Buchstabe ±7° Rotation + kleiner Positions-Jitter
+          o.rotate = (rndJ() - 0.5) * (14 * Math.PI / 180);
+          x += (rndJ() - 0.5) * cell * 0.09;
+          y += (rndJ() - 0.5) * cell * 0.09;
+        }
+        s.text(grid[r][c], x, y, o);
       }
     }
 
-    if (style === 'pinsel') {
-      // Einkreisung als echter Pinselzug: Band mit variabler Breite,
-      // dünner Ansatz/Auslauf, die Enden überlappen sich sichtbar
-      placements.forEach((p, pi) => {
-        const first = p.cells[0], last = p.cells[p.cells.length - 1];
-        const x1 = gx + (first[1] + 0.5) * cell, y1 = gy + (first[0] + 0.5) * cell;
-        const x2 = gx + (last[1] + 0.5) * cell, y2 = gy + (last[0] + 0.5) * cell;
-        const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
-        const rx = Math.hypot(x2 - x1, y2 - y1) / 2 + cell * 0.65;
-        const ry = cell * 0.64;
-        const ang = Math.atan2(y2 - y1, x2 - x1);
-        const rr = rng('brush' + pi + p.word);
-        const p1 = rr() * Math.PI * 2, p2 = rr() * Math.PI * 2;
-        const a0 = rr() * Math.PI * 2;              // Ansatzpunkt variiert
-        const baseW = cell * 0.24;
-        const steps = 64;
-        const outer = [], inner = [];
-        for (let k = 0; k <= steps; k++) {
-          const u = k / steps;                       // 0..1 über 1.09 Umläufe
-          const a = a0 + u * Math.PI * 2 * 1.09;     // Enden überlappen
-          const wob = 1 + 0.045 * Math.sin(a * 2 + p1) + 0.035 * Math.sin(a * 3 + p2);
-          // Pinselbreite: dünn ansetzen, satt in der Mitte, dünn auslaufen
-          const endT = Math.min(1, Math.min(u / 0.1, (1 - u) / 0.14));
-          const wHere = baseW * (0.25 + 0.75 * endT) * (0.86 + 0.2 * Math.sin(a * 5 + p2));
-          const px0 = Math.cos(a) * rx * wob, py0 = Math.sin(a) * ry * wob;
-          // Normale der Ellipse für den Bandversatz
-          let nx = Math.cos(a) * ry, ny = Math.sin(a) * rx;
-          const nl = Math.hypot(nx, ny) || 1;
-          nx = nx / nl * wHere / 2; ny = ny / nl * wHere / 2;
-          const rot = (px, py) => [mx + Math.cos(ang) * px - Math.sin(ang) * py,
-                                   my + Math.sin(ang) * px + Math.cos(ang) * py];
-          outer.push(rot(px0 + nx, py0 + ny));
-          inner.push(rot(px0 - nx, py0 - ny));
-        }
-        s.polyline(outer.concat(inner.reverse()), { fill: ACC, close: true });
-      });
-    }
+    // Umkreisungen: Länge = Wortlänge + 1,15 Zellbreiten, Höhe 0,92 Zellhöhe.
+    // Berühren die Buchstaben nicht — Lesbarkeit hat Priorität.
+    placements.forEach((p, pi) => {
+      const first = p.cells[0], last = p.cells[p.cells.length - 1];
+      const x1 = gx + (first[1] + 0.5) * cell, y1 = gy + (first[0] + 0.5) * cell;
+      const x2 = gx + (last[1] + 0.5) * cell, y2 = gy + (last[0] + 0.5) * cell;
+      const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+      const rx = (Math.hypot(x2 - x1, y2 - y1) + 1.15 * cellW) / 2;
+      const ry = 0.92 * cellH / 2;
+      const ang = Math.atan2(y2 - y1, x2 - x1);
+      const rr = rng('oval' + pi + p.word);
+      sketchOval(s, mx, my, rx, ry, ang, ST.circle, cell * 0.075, rr);
+    });
 
-    // Fußzeile klassisch (bei Pinsel in der Wahlfarbe, sonst schwarz/grau)
-    const fy = H - M - H * 0.055;
-    s.polyline([[W / 2 - W * 0.118, fy], [W / 2 + W * 0.118, fy]], { stroke: inkMain, lw: cell / 14 });
-    const fn = ('Familie ' + fam.name).toUpperCase();
-    const fs = fitSize(fn, W * 0.03, FONTS.sans, 700, 'normal', (W - 2 * M) * 0.8);
-    spacedText(s, fn, W / 2, fy + W * 0.045,
-      { size: fs, family: FONTS.sans, weight: 700, fill: inkMain }, fs * 0.12, 'center');
-    if (fam.city) {
-      spacedText(s, fam.city.toUpperCase(), W / 2, fy + W * 0.073,
-        { size: W * 0.015, family: FONTS.sans, weight: 500,
-          fill: style === 'pinsel' ? ACC : '#A6A6A6' }, W * 0.0025, 'center');
-    }
+    // Fußbereich: Familienname FETT in der Stilschrift, darunter klein
+    // „since [Gründungsjahr]" in gedämpftem Grau. Kein Markenname.
+    const founded = fam.founded || Math.min(...fam.members.map((m) => m.born.getFullYear()));
+    const ty = H - M - H * 0.045;
+    const title = fam.name;
+    const tSize = fitSize(title, W * 0.055, ST.titleFont, ST.titleWeight, 'normal', W - 2 * M);
+    s.text(title, W / 2, ty, {
+      size: tSize, family: ST.titleFont, weight: ST.titleWeight, fill: '#1F1F1F',
+      align: 'center', strokeWidth: ST.titleStroke ? tSize * ST.titleStroke : 0,
+    });
+    s.text('since ' + founded, W / 2, ty + W * 0.038, {
+      size: W * 0.024, family: ST.sinceFont, weight: ST.sinceWeight,
+      style: ST.sinceStyle, fill: '#8C847C', align: 'center',
+    });
   }
 
   /* ══ Painter · figuren ══
@@ -579,11 +610,12 @@
   }
 
   const PAINTERS = {
-    'smiley':         (s, fam, o) => paintSmiley(s, fam, o),
-    'jahre':          (s, fam) => paintJahre(s, fam),
-    'raetsel-modern': (s, fam, o) => paintRaetsel(s, fam, 'modern', o),
-    'raetsel-pinsel': (s, fam, o) => paintRaetsel(s, fam, 'pinsel', o),
-    'figuren':        (s, fam, o) => paintFiguren(s, fam, o),
+    'smiley':          (s, fam, o) => paintSmiley(s, fam, o),
+    'jahre':           (s, fam) => paintJahre(s, fam),
+    'raetsel-modern':  (s, fam) => paintRaetsel(s, fam, 'modern'),
+    'raetsel-classic': (s, fam) => paintRaetsel(s, fam, 'classic'),
+    'raetsel-hand':    (s, fam) => paintRaetsel(s, fam, 'hand'),
+    'figuren':         (s, fam, o) => paintFiguren(s, fam, o),
   };
 
   /* ══ Generator-Klasse ══ */
@@ -597,6 +629,7 @@
       this.family = {
         name: 'Weber',
         city: '',
+        founded: null,   // Gründungsjahr der Familie (für "since …")
         members: [
           { name: 'Michael', born: new Date('1985-04-12') },
           { name: 'Anna', born: new Date('1987-09-03') },
@@ -615,9 +648,11 @@
         this.family.members.filter((m) => m.name.trim() && !isNaN(m.born)).length >= 2;
     }
     _cleanFamily() {
+      const founded = parseInt(this.family.founded, 10);
       return {
         name: this.family.name.trim() || 'Familie',
         city: (this.family.city || '').trim(),
+        founded: founded >= 1000 && founded <= 9999 ? founded : null,
         members: this.family.members
           .filter((m) => m.name.trim() && !isNaN(m.born))
           .slice(0, 8),
@@ -643,12 +678,11 @@
       return {
         'Motiv': 'Familie · ' + (VARIANTS[this.variant]?.label || this.variant),
         'Familienname': fam.name,
-        'Ort': fam.city,
+        'Gründungsjahr': fam.founded || '',
         'Mitglieder': fam.members.map((m) => m.name + ' (' + m.born.getFullYear() + ')').join(', '),
         'Format': SIZES[this.size].label,
         'Akzentfarbe': this.variant === 'smiley' ? this.accent
-          : this.variant === 'figuren' ? this.accent2
-          : this.variant === 'raetsel-pinsel' ? this.accent3 : '—',
+          : this.variant === 'figuren' ? this.accent2 : '—',
       };
     }
   }
@@ -680,15 +714,15 @@
       if (el) el.textContent = gen.price().toFixed(2).replace('.', ',') + ' €';
     }
     function updateAccentVisibility() {
-      const smiley = $('accentRowSmiley'), fig = $('accentRowFiguren'), rp = $('accentRowRaetsel');
+      const smiley = $('accentRowSmiley'), fig = $('accentRowFiguren');
       if (smiley) smiley.hidden = gen.variant !== 'smiley';
       if (fig) fig.hidden = gen.variant !== 'figuren';
-      if (rp) rp.hidden = gen.variant !== 'raetsel-pinsel';
     }
 
     /* Familie */
     $('famName')?.addEventListener('input', (e) => { gen.family.name = e.target.value; rerender(); });
     $('famCity')?.addEventListener('input', (e) => { gen.family.city = e.target.value; rerender(); });
+    $('famFounded')?.addEventListener('input', (e) => { gen.family.founded = e.target.value; rerender(); });
 
     function renderMembers() {
       const box = $('famMembers');

@@ -11,7 +11,7 @@
   Theme-Einstellungen (injiziert via theme.liquid).
 {% endcomment %}
 
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600&family=Poppins:wght@300;500;700&family=Lora:ital,wght@0,400;0,500;0,700;1,400&family=Permanent+Marker&display=swap" rel="stylesheet">
 
 <style>
   .fam-main { max-width: 1180px; margin: 0 auto; padding: 40px 24px 64px; }
@@ -69,7 +69,7 @@
       <div class="fam-step">1 · Eure Familie</div>
       <div class="fam-two">
         <input type="text" id="famName" value="Weber" placeholder="Familienname" aria-label="Familienname" />
-        <input type="text" id="famCity" value="" placeholder="Ort (optional)" aria-label="Ort" />
+        <input type="number" id="famFounded" min="1900" max="2100" placeholder="Gründungsjahr (z.B. 2012)" aria-label="Gründungsjahr der Familie" />
       </div>
       <div class="fam-members" id="famMembers"></div>
       <button type="button" class="fam-add" id="famAdd">+ Mitglied hinzufügen (max. 8)</button>
@@ -78,8 +78,9 @@
       <div class="fam-variants">
         <button type="button" class="fam-variant active" data-variant="smiley">🙂 Smiley-Grid<small>Ein Gesicht pro Mitglied</small></button>
         <button type="button" class="fam-variant" data-variant="jahre">1989 Jahreszahlen<small>Geburtsjahre + Namen</small></button>
-        <button type="button" class="fam-variant" data-variant="raetsel-modern">🔤 Rätsel · Modern<small>Namen dunkel abgesetzt</small></button>
-        <button type="button" class="fam-variant" data-variant="raetsel-pinsel">✏️ Rätsel · Pinsel<small>Eine Wahlfarbe, Zeichnungslook</small></button>
+        <button type="button" class="fam-variant" data-variant="raetsel-modern">🔤 Word Search · Modern<small>Poppins, Terracotta-Kreise</small></button>
+        <button type="button" class="fam-variant" data-variant="raetsel-classic">📖 Word Search · Classic<small>Lora-Serife, Bordeaux-Kreise</small></button>
+        <button type="button" class="fam-variant" data-variant="raetsel-hand">✏️ Word Search · Handwriting<small>Marker-Schrift, rote Kreise</small></button>
         <button type="button" class="fam-variant" data-variant="figuren">👥 Figuren<small>Größe nach Alter</small></button>
       </div>
 
@@ -90,10 +91,6 @@
       <div class="fam-color-row" id="accentRowFiguren" hidden>
         <input type="color" id="famAccent2" value="#141414" aria-label="Figuren-Farbe" />
         <span>Farbe der Figuren</span>
-      </div>
-      <div class="fam-color-row" id="accentRowRaetsel" hidden>
-        <input type="color" id="famAccent3" value="#E8495A" aria-label="Rätsel-Farbe" />
-        <span>Wahlfarbe des Zeichnungslooks (Rätsel · Pinsel)</span>
       </div>
 
       <div class="fam-step">3 · Format</div>

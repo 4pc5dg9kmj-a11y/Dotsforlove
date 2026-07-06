@@ -145,13 +145,19 @@ Fünf freigegebene Motive auf der Seite **„Familien-Poster"** (`familie.html` 
 
 - Läuft über **dieselbe Pipeline** wie der Foto-Konfigurator: Live-Vorschau mit Wasserzeichen → Druck-SVG beim Warenkorb-Klick zum Hub (`_design_id`) → Gelato/Heimdruck automatisch. Gleiche Produkte, gleiche Preise.
 - **Einrichtung:** `assets/family.js` als `family.js` in die Theme-Assets kopieren; Shopify-Seite „Familien-Poster" mit Handle `familien-poster` und Template `page.familien-poster` anlegen.
-- **Schrift für den Druck:** Die Handschrift-Motive (Rätsel-Pinsel, Figuren) nutzen die frei lizenzierte Schrift **Caveat**. Damit der Hub sie beim Rendern kennt, auf dem Hub-Server einmalig installieren:
+- **Schriften für den Druck:** Die Familien-Motive nutzen frei lizenzierte Schriften: **Caveat** (Figuren-Namen), **Playfair Display** (Jahreszahlen), **Poppins / Lora / Permanent Marker** (Family Word Search modern/classic/handwriting). Damit der Hub sie beim Rendern kennt, einmalig auf dem Hub-Server installieren:
   ```bash
   mkdir -p ~/.fonts && cd ~/.fonts
-  curl -LO https://github.com/google/fonts/raw/main/ofl/caveat/Caveat%5Bwght%5D.ttf
+  curl -sLO https://raw.githubusercontent.com/google/fonts/main/ofl/caveat/Caveat%5Bwght%5D.ttf
+  curl -sLO https://raw.githubusercontent.com/google/fonts/main/ofl/playfairdisplay/PlayfairDisplay%5Bwght%5D.ttf
+  curl -sLO https://raw.githubusercontent.com/google/fonts/main/ofl/poppins/Poppins-Light.ttf
+  curl -sLO https://raw.githubusercontent.com/google/fonts/main/ofl/poppins/Poppins-Medium.ttf
+  curl -sLO https://raw.githubusercontent.com/google/fonts/main/ofl/poppins/Poppins-Bold.ttf
+  curl -sLO https://raw.githubusercontent.com/google/fonts/main/ofl/lora/Lora%5Bwght%5D.ttf
+  curl -sLO https://raw.githubusercontent.com/google/fonts/main/apache/permanentmarker/PermanentMarker-Regular.ttf
   fc-cache -f
   ```
-  Ohne Caveat fällt das Rendering auf eine System-Schreibschrift zurück — funktioniert, sieht aber weniger charmant aus.
+  Ohne diese Schriften fällt das Rendering auf Systemschriften zurück — funktioniert, sieht aber weniger charmant aus.
 
 ## 9. Status prüfen
 
