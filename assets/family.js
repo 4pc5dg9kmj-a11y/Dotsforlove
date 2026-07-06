@@ -578,15 +578,20 @@
 
     /** Kantenpunkte eines Pinselstrichs berechnen (ohne zu zeichnen):
         leichte Kantenunruhe, Verjüngung, dezenter Schwung — bleibt
-        unangetastet für Arme & Beine, die ihre Unregelmäßigkeit behalten. */
-    function strokeEdges(cx, off, wTop, wBot, topYs, botYs, bend) {
+        unangetastet für Arme & Beine, die ihre Unregelmäßigkeit behalten.
+        hipAmt (nur bei Frauen-Figuren > 0) fügt oben, um die Hüfte
+        herum, einen sanften nach außen gerichteten Schwung ein, der
+        Richtung Fuß wieder ausläuft. */
+    function strokeEdges(cx, off, wTop, wBot, topYs, botYs, bend, hipAmt) {
       const SEG = 7;
       const left = [], right = [];
+      const sign = off < 0 ? -1 : 1;
       for (let k = 0; k <= SEG; k++) {
         const t = k / SEG;
         const y = topYs + (botYs - topYs) * t;
         const wHere = wTop + (wBot - wTop) * t;
-        const sway = bend * Math.sin(t * Math.PI);
+        const hip = hipAmt ? sign * hipAmt * Math.sin(Math.min(t / 0.4, 1) * Math.PI) : 0;
+        const sway = bend * Math.sin(t * Math.PI) + hip;
         const jL = (rnd() - 0.5) * wHere * 0.07;
         const jR = (rnd() - 0.5) * wHere * 0.07;
         left.push([cx + off + sway - wHere / 2 + jL, y]);
@@ -596,16 +601,6 @@
     }
     function fillBand(leftPts, rightPts) {
       s.polyline(leftPts.concat(rightPts.slice().reverse()), { fill: FIG, close: true });
-    }
-    /** x-Position einer (bereits berechneten) Kanten-Punktreihe bei beliebigem y,
-        linear zwischen den Stützpunkten interpoliert. */
-    function edgeXAtY(points, topYs, botYs, y) {
-      const span = botYs - topYs;
-      const tt = span === 0 ? 0 : Math.min(1, Math.max(0, (y - topYs) / span));
-      const idx = tt * (points.length - 1);
-      const i0 = Math.floor(idx), i1 = Math.min(points.length - 1, i0 + 1);
-      const frac = idx - i0;
-      return points[i0][0] + (points[i1][0] - points[i0][0]) * frac;
     }
 
     mem.forEach((m, i) => {
@@ -621,53 +616,38 @@
       wobblyEllipse(s, cx + (rnd() - 0.5) * figW * 0.1, topY + headR,
         headR, headR * (1.05 + rnd() * 0.2), (rnd() - 0.5) * 0.35, { fill: FIG }, rnd);
 
-      // Immer 5 Striche: außen kurz (Hände/Arme), daneben lang (Beine),
-      // Mitte kurz. Arme & Beine behalten ihre organische Unregelmäßigkeit
-      // (eigener Schwung/Kantenrauschen wie zuvor) — nur der Mittelstrich
-      // wird NICHT eigenständig positioniert, sondern folgt den tatsäch-
-      // lichen Innenkanten der beiden Beine und wird dabei automatisch
-      // breiter oder schmaler, damit stets nur eine sehr schmale Lücke
-      // zu beiden Seiten bleibt.
+      // 4 Striche: außen kurz (Arme), innen lang (Beine) — kein Mittelstrich.
+      // Arme & Beine behalten ihre organische Unregelmäßigkeit (eigener
+      // Schwung/Kantenrauschen). Die Beine sind oben etwas breiter und
+      // verjüngen sich nach unten deutlicher als die Arme; bei weiblichen
+      // Figuren bekommt der Hüftbereich zusätzlich etwas Schwung nach außen.
       const bodyTop = topY + headR * (1.85 + rnd() * 0.2);
       const bodyBend = (rnd() - 0.5) * figW * 0.12;          // dezenter Schwung
       const spanY = baseY - bodyTop;
       const armBot = () => bodyTop + spanY * (0.42 + rnd() * 0.06);
       const legBot = () => baseY - rnd() * figH * 0.02;
-      const midBot = bodyTop + spanY * (0.55 + rnd() * 0.05);
 
-      const wArm = 0.19, wLeg = 0.23;
-      const gapMidLeg = figW * 0.018;   // sehr schmale Lücke Mitte↔Bein
-      const gapLegArm = figW * 0.035;   // Lücke Bein↔Arm
-      const legOff = figW * (wLeg + 0.16) / 2 + gapMidLeg; // Basisabstand (Mitte startet ~0.16 breit)
-      const armOff = legOff + figW * (wLeg + wArm) / 2 + gapLegArm;
+      const wArm = 0.19, wLeg = 0.27;
+      const gapLegLeg = figW * 0.075;  // Lücke zwischen den beiden Beinen
+      const gapLegArm = figW * 0.035;  // Lücke Bein↔Arm
+      const isFemale = m.gender === 'w';
+      const hipAmt = isFemale ? figW * (0.055 + rnd() * 0.02) : 0;
 
       const mkBend = () => bodyBend + (rnd() - 0.5) * figW * 0.04;
-      const legWTop = figW * (wLeg + rnd() * 0.015), legWBot = legWTop * (0.6 + rnd() * 0.15);
+      const legWTop = figW * (wLeg + rnd() * 0.015), legWBot = legWTop * (0.42 + rnd() * 0.12);
       const armWTopL = figW * (wArm + rnd() * 0.015), armWBotL = armWTopL * (0.6 + rnd() * 0.15);
       const armWTopR = figW * (wArm + rnd() * 0.015), armWBotR = armWTopR * (0.6 + rnd() * 0.15);
+      const legOff = legWTop / 2 + gapLegLeg / 2;
+      const armOff = legOff + figW * (wLeg + wArm) / 2 + gapLegArm;
 
-      const legLeft  = strokeEdges(cx, -legOff, legWTop, legWBot, bodyTop, legBot(), mkBend());
-      const legRight = strokeEdges(cx,  legOff, legWTop, legWBot, bodyTop, legBot(), mkBend());
+      const legLeft  = strokeEdges(cx, -legOff, legWTop, legWBot, bodyTop, legBot(), mkBend(), hipAmt);
+      const legRight = strokeEdges(cx,  legOff, legWTop, legWBot, bodyTop, legBot(), mkBend(), hipAmt);
       const armLeft  = strokeEdges(cx, -armOff, armWTopL, armWBotL, bodyTop, armBot(), mkBend());
       const armRight = strokeEdges(cx,  armOff, armWTopR, armWBotR, bodyTop, armBot(), mkBend());
       fillBand(legLeft.left, legLeft.right);
       fillBand(legRight.left, legRight.right);
       fillBand(armLeft.left, armLeft.right);
       fillBand(armRight.left, armRight.right);
-
-      // Mittelstrich: bei jedem Segment exakt gapMidLeg von der jeweils
-      // tatsächlichen (unregelmäßigen) Bein-Innenkante entfernt — dadurch
-      // passt sich seine Breite automatisch an, die Lücke bleibt konstant.
-      const SEGM = 7;
-      const midLeftPts = [], midRightPts = [];
-      for (let k = 0; k <= SEGM; k++) {
-        const y = bodyTop + (midBot - bodyTop) * (k / SEGM);
-        // legLeft.right = Innenkante (rechte Seite) des linken Beins,
-        // legRight.left = Innenkante (linke Seite) des rechten Beins.
-        midLeftPts.push([edgeXAtY(legLeft.right, legLeft.topYs, legLeft.botYs, y) + gapMidLeg, y]);
-        midRightPts.push([edgeXAtY(legRight.left, legRight.topYs, legRight.botYs, y) - gapMidLeg, y]);
-      }
-      fillBand(midLeftPts, midRightPts);
 
       // Name NICHT im Strichbild — unten links neben den Füßen, waagerecht
       // lesbar, im gewählten Schriftstil (klassisch/modern/Handschrift)
@@ -712,10 +692,10 @@
         founded: null,   // Gründungsjahr der Familie (für "since …")
         lang: 'de',      // Beschriftung: 'de' → "Familie Weber", 'en' → "the Weber Family"
         members: [
-          { name: 'Michael', born: new Date('1985-04-12') },
-          { name: 'Anna', born: new Date('1987-09-03') },
-          { name: 'Emma', born: new Date('2015-03-02') },
-          { name: 'Luis', born: new Date('2019-11-20') },
+          { name: 'Michael', born: new Date('1985-04-12'), gender: 'm' },
+          { name: 'Anna', born: new Date('1987-09-03'), gender: 'w' },
+          { name: 'Emma', born: new Date('2015-03-02'), gender: 'w' },
+          { name: 'Luis', born: new Date('2019-11-20'), gender: 'm' },
         ],
       };
     }
@@ -745,7 +725,8 @@
         lang: this.family.lang === 'en' ? 'en' : 'de',
         members: this.family.members
           .filter((m) => m.name.trim() && !isNaN(m.born))
-          .slice(0, 8),
+          .slice(0, 8)
+          .map((m) => ({ ...m, gender: m.gender === 'w' ? 'w' : 'm' })),
       };
     }
     _opts() {
@@ -841,13 +822,21 @@
         const row = document.createElement('div');
         row.className = 'fam-member';
         const iso = isNaN(m.born) ? '' : m.born.toISOString().slice(0, 10);
+        const isFemale = m.gender === 'w';
         row.innerHTML =
           '<input type="text" value="' + m.name.replace(/"/g, '&quot;') + '" placeholder="Vorname" aria-label="Vorname" />' +
           '<input type="date" value="' + iso + '" aria-label="Geburtsdatum" />' +
+          '<button type="button" class="fam-gender" aria-label="Geschlecht (nur für Motiv Figuren relevant)">' + (isFemale ? '♀' : '♂') + '</button>' +
           (gen.family.members.length > 2 ? '<button type="button" class="fam-rm" aria-label="Entfernen">×</button>' : '<span></span>');
         const [nameIn, dateIn] = row.querySelectorAll('input');
         nameIn.addEventListener('input', () => { m.name = nameIn.value; rerender(); });
         dateIn.addEventListener('change', () => { m.born = new Date(dateIn.value); rerender(); });
+        const genderBtn = row.querySelector('.fam-gender');
+        genderBtn.addEventListener('click', () => {
+          m.gender = m.gender === 'w' ? 'm' : 'w';
+          genderBtn.textContent = m.gender === 'w' ? '♀' : '♂';
+          rerender();
+        });
         row.querySelector('.fam-rm')?.addEventListener('click', () => {
           gen.family.members.splice(i, 1); renderMembers(); rerender();
         });
@@ -856,7 +845,7 @@
     }
     $('famAdd')?.addEventListener('click', () => {
       if (gen.family.members.length >= 8) return;
-      gen.family.members.push({ name: '', born: new Date('2020-01-01') });
+      gen.family.members.push({ name: '', born: new Date('2020-01-01'), gender: 'm' });
       renderMembers(); rerender();
     });
     renderMembers();
